@@ -1,0 +1,16 @@
+# Makefile
+
+.PHONY: all gen
+
+KOALASC = koalasc
+COMMAND_SRC = "ks/commands.ks"
+MODEL_SRC = "ks/models.ks"
+GENERATED_PROG_LANG = python
+GENERATED_MESSAGE_DIR = "ks"
+
+
+all: gen
+
+gen:
+	$(KOALASC) $(COMMAND_SRC) $(GENERATED_PROG_LANG) $(GENERATED_MESSAGE_DIR)
+	$(KOALASC) $(MODEL_SRC) $(GENERATED_PROG_LANG) $(GENERATED_MESSAGE_DIR)

@@ -1,0 +1,56 @@
+{
+	"general": {
+		"game_name": "XO",
+		"command_files": [
+			"ks/commands"
+		],
+		"allowed_teams": [],
+		"offline_mode": true,
+		"": "online configs",
+		"match_id": "0"
+	},
+
+	"net": {
+		"host": "0.0.0.0",
+		"port": 5000,
+		"keyfile": "certs/key.pem",
+		"certfile": "certs/cert.pem"
+	},
+
+	"gui": {
+		"host": "0.0.0.0",
+		"port": 5001,
+		"save_replay": true,
+		"replay_dir": "replays",
+		"replay_filename": null,
+		"width": 442,
+		"height": 445,
+		"images": {
+			"Background": "images/Background.png",
+			"X": "images/X.png",
+			"O": "images/O.png"
+		}
+	},
+
+	"sides": {
+		"X": ["0"],
+		"O": ["0"]
+	},
+
+	"game_handler": {
+		"": "base game handler configs",
+		"start_waiting_time": 3,
+		"": "realtime game handler configs",
+		"cycle_duration": 1,
+		"max_total_commands": 1,
+		"max_team_commands": 1,
+		"max_agent_commands": 1,
+		"": "turnbased game handler configs",
+		"auto_change_turn": 1,
+		"auto_change_turn_sequence": ["X", "O"],
+		"": "my configs",
+		"cell_init_x": 10,
+		"cell_init_y": 15,
+		"cell_step": 155
+	}
+}
