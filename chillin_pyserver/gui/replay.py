@@ -25,7 +25,7 @@ class Replay:
     def _make_replay_path(self):
         replay_dir = Config.config['gui'].get('replay_dir') or '.'
         replay_filename = Config.config['gui'].get('replay_filename') or \
-                datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
+                datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
         if not os.path.exists(replay_dir):
             os.makedirs(replay_dir)
         return os.path.join(
