@@ -1,0 +1,4 @@
+include LICENSE
+
+exclude examples/
+global-exclude *.pyc
