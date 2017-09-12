@@ -30,6 +30,7 @@ class Protocol:
 
 
     def _add_client(self, sock):
+        self._send_msg(sock, self._game_info)
         self._lock.acquire()
         self._clients.add(sock)
         self._lock.release()
@@ -49,7 +50,6 @@ class Protocol:
             token = self._network.recv_data(sock)
             if token and self._auth_func(token):
                 self._send_msg(sock, Auth(authenticated=True))
-                self._send_msg(sock, self._game_info)
                 self._add_client(sock)
             else:
                 self._send_msg(sock, Auth(authenticated=False))
