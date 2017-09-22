@@ -3,8 +3,8 @@ from setuptools import setup, find_packages
 
 
 setup(
-    name='chillin-pyserver',
-    version='1.0.2',
+    name='chillin-server',
+    version='1.0.0',
     description='Chillin AI Game Framework (Python Server)',
     long_description='',
     author='k04la',
@@ -35,6 +35,6 @@ setup(
     packages=find_packages(),
 
     package_data={
-        'chillin_pyserver': ['default_certs/*']
+        'chillin_server': ['default_certs/*']
     }
 )

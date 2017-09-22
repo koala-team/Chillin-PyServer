@@ -5,7 +5,7 @@
 import sys
 
 # chillin imports
-from chillin_pyserver import GameServer, Config
+from chillin_server import GameServer, Config
 
 # project imports
 from game_handler import GameHandler

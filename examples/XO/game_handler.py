@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # chillin imports
-from chillin_pyserver import TurnbasedGameHandler
+from chillin_server import TurnbasedGameHandler
 
 # project imports
 from ks.models import World, ECell
