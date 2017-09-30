@@ -31,3 +31,15 @@ ref = uint
 _def = class
 image_name = string
 image_data = string
+
+
+[BringToFront]
+_def = class
+ref = uint
+target_ref = uint
+
+
+[SendToBack]
+_def = class
+ref = uint
+target_ref = uint

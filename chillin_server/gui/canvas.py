@@ -135,6 +135,26 @@ class Canvas:
                 self.store_image_data(name, data)
 
 
+    def bring_to_front(self, ref, target_ref=None):
+        ref = self._get_ref(ref)
+        if target_ref:
+            target_ref = self._get_ref(target_ref)
+
+        self.add_action(
+            BringToFront(ref, target_ref)
+        )
+
+
+    def send_to_back(self, ref, target_ref=None):
+        ref = self._get_ref(ref)
+        if target_ref:
+            target_ref = self._get_ref(target_ref)
+
+        self.add_action(
+            SendToBack(ref, target_ref)
+        )
+
+
     # Elements
 
     def _create_element(self, element_class, element_kwargs, custom_ref):

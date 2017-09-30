@@ -400,3 +400,111 @@ class StoreImageData(object):
 			self.image_data = None
 		
 		return offset
+
+
+class BringToFront(object):
+
+	@staticmethod
+	def name():
+		return 'BringToFront'
+
+
+	def __init__(self, ref=None, target_ref=None):
+		self.initialize(ref, target_ref)
+	
+
+	def initialize(self, ref=None, target_ref=None):
+		self.ref = ref
+		self.target_ref = target_ref
+	
+
+	def serialize(self):
+		s = b''
+		
+		# serialize self.ref
+		s += b'\x00' if self.ref is None else b'\x01'
+		if self.ref is not None:
+			s += struct.pack('I', self.ref)
+		
+		# serialize self.target_ref
+		s += b'\x00' if self.target_ref is None else b'\x01'
+		if self.target_ref is not None:
+			s += struct.pack('I', self.target_ref)
+		
+		return s
+	
+
+	def deserialize(self, s, offset=0):
+		# deserialize self.ref
+		tmp35 = struct.unpack('B', s[offset:offset + 1])[0]
+		offset += 1
+		if tmp35:
+			self.ref = struct.unpack('I', s[offset:offset + 4])[0]
+			offset += 4
+		else:
+			self.ref = None
+		
+		# deserialize self.target_ref
+		tmp36 = struct.unpack('B', s[offset:offset + 1])[0]
+		offset += 1
+		if tmp36:
+			self.target_ref = struct.unpack('I', s[offset:offset + 4])[0]
+			offset += 4
+		else:
+			self.target_ref = None
+		
+		return offset
+
+
+class SendToBack(object):
+
+	@staticmethod
+	def name():
+		return 'SendToBack'
+
+
+	def __init__(self, ref=None, target_ref=None):
+		self.initialize(ref, target_ref)
+	
+
+	def initialize(self, ref=None, target_ref=None):
+		self.ref = ref
+		self.target_ref = target_ref
+	
+
+	def serialize(self):
+		s = b''
+		
+		# serialize self.ref
+		s += b'\x00' if self.ref is None else b'\x01'
+		if self.ref is not None:
+			s += struct.pack('I', self.ref)
+		
+		# serialize self.target_ref
+		s += b'\x00' if self.target_ref is None else b'\x01'
+		if self.target_ref is not None:
+			s += struct.pack('I', self.target_ref)
+		
+		return s
+	
+
+	def deserialize(self, s, offset=0):
+		# deserialize self.ref
+		tmp37 = struct.unpack('B', s[offset:offset + 1])[0]
+		offset += 1
+		if tmp37:
+			self.ref = struct.unpack('I', s[offset:offset + 4])[0]
+			offset += 4
+		else:
+			self.ref = None
+		
+		# deserialize self.target_ref
+		tmp38 = struct.unpack('B', s[offset:offset + 1])[0]
+		offset += 1
+		if tmp38:
+			self.target_ref = struct.unpack('I', s[offset:offset + 4])[0]
+			offset += 4
+		else:
+			self.target_ref = None
+		
+		return offset
