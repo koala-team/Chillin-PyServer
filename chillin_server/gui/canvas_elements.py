@@ -180,8 +180,7 @@ class Circle(object):
 		tmp7 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
 		if tmp7:
-			if self.color is None:
-				self.color = Color()
+			self.color = Color()
 			offset = self.color.deserialize(s, offset)
 		else:
 			self.color = None
@@ -199,8 +198,7 @@ class Circle(object):
 		tmp9 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
 		if tmp9:
-			if self.stroke_color is None:
-				self.stroke_color = Color()
+			self.stroke_color = Color()
 			offset = self.stroke_color.deserialize(s, offset)
 		else:
 			self.stroke_color = None
@@ -317,8 +315,7 @@ class Ellipse(object):
 		tmp14 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
 		if tmp14:
-			if self.color is None:
-				self.color = Color()
+			self.color = Color()
 			offset = self.color.deserialize(s, offset)
 		else:
 			self.color = None
@@ -345,8 +342,7 @@ class Ellipse(object):
 		tmp17 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
 		if tmp17:
-			if self.stroke_color is None:
-				self.stroke_color = Color()
+			self.stroke_color = Color()
 			offset = self.stroke_color.deserialize(s, offset)
 		else:
 			self.stroke_color = None
@@ -469,8 +465,7 @@ class Rect(object):
 		tmp22 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
 		if tmp22:
-			if self.color is None:
-				self.color = Color()
+			self.color = Color()
 			offset = self.color.deserialize(s, offset)
 		else:
 			self.color = None
@@ -506,8 +501,7 @@ class Rect(object):
 		tmp26 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
 		if tmp26:
-			if self.stroke_color is None:
-				self.stroke_color = Color()
+			self.stroke_color = Color()
 			offset = self.stroke_color.deserialize(s, offset)
 		else:
 			self.stroke_color = None
@@ -618,8 +612,7 @@ class Line(object):
 		tmp31 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
 		if tmp31:
-			if self.color is None:
-				self.color = Color()
+			self.color = Color()
 			offset = self.color.deserialize(s, offset)
 		else:
 			self.color = None
@@ -792,8 +785,7 @@ class Polygon(object):
 		tmp52 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
 		if tmp52:
-			if self.color is None:
-				self.color = Color()
+			self.color = Color()
 			offset = self.color.deserialize(s, offset)
 		else:
 			self.color = None
@@ -847,8 +839,7 @@ class Polygon(object):
 		tmp58 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
 		if tmp58:
-			if self.stroke_color is None:
-				self.stroke_color = Color()
+			self.stroke_color = Color()
 			offset = self.stroke_color.deserialize(s, offset)
 		else:
 			self.stroke_color = None
@@ -1028,8 +1019,7 @@ class Image(object):
 		tmp72 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
 		if tmp72:
-			if self.stroke_color is None:
-				self.stroke_color = Color()
+			self.stroke_color = Color()
 			offset = self.stroke_color.deserialize(s, offset)
 		else:
 			self.stroke_color = None
@@ -1188,8 +1178,7 @@ class Text(object):
 		tmp81 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
 		if tmp81:
-			if self.color is None:
-				self.color = Color()
+			self.color = Color()
 			offset = self.color.deserialize(s, offset)
 		else:
 			self.color = None
@@ -1233,8 +1222,7 @@ class Text(object):
 		tmp89 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
 		if tmp89:
-			if self.background_color is None:
-				self.background_color = Color()
+			self.background_color = Color()
 			offset = self.background_color.deserialize(s, offset)
 		else:
 			self.background_color = None
@@ -1270,8 +1258,7 @@ class Text(object):
 		tmp93 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
 		if tmp93:
-			if self.stroke_color is None:
-				self.stroke_color = Color()
+			self.stroke_color = Color()
 			offset = self.stroke_color.deserialize(s, offset)
 		else:
 			self.stroke_color = None
