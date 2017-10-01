@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='chillin-server',
-    version='1.0.1',
+    version='1.1.0',
     description='Chillin AI Game Framework (Python Server)',
     long_description='',
     author='Koala',
