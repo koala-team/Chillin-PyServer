@@ -851,6 +851,8 @@ class ScaleType(Enum):
 	NoScale = 0
 	ScaleToWidth = 1
 	ScaleToHeight = 2
+	ScaleX = 3
+	ScaleY = 4
 
 
 class Image(object):

@@ -66,7 +66,7 @@ stroke_color = Color
 
 
 [ScaleType]
-_def = enum <ubyte> {NoScale, ScaleToWidth, ScaleToHeight}
+_def = enum <ubyte> {NoScale, ScaleToWidth, ScaleToHeight, ScaleX, ScaleY}
 
 [Image]
 _def = class
