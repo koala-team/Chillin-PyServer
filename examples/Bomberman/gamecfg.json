@@ -1,0 +1,76 @@
+{
+	"general": {
+		"game_name": "Bomberman",
+		"command_files": [
+			"ks/commands"
+		],
+		"allowed_teams": [],
+		"offline_mode": true,
+		"": "online configs",
+		"match_id": "0"
+	},
+
+	"net": {
+		"host": "0.0.0.0",
+		"port": 5000,
+		"keyfile": "certs/key.pem",
+		"certfile": "certs/cert.pem"
+	},
+
+	"gui": {
+		"host": "0.0.0.0",
+		"port": 5001,
+		"save_replay": true,
+		"replay_dir": "replays",
+		"replay_filename": null,
+		"width": 960,
+		"height": 960,
+		"images": {
+			"Background": "images/background.png",
+
+			"Bomberman1": "images/bomberman1.png",
+			"Bomberman2": "images/bomberman2.png",
+
+			"DestroyableBlock": "images/destroyable_block.png",
+			"UndestroyableBlock": "images/undestroyable_block.png",
+
+			"Bomb1": "images/bomb1.png",
+			"Bomb2": "images/bomb2.png",
+			"Bomb3": "images/bomb3.png",
+			"Bomb4": "images/bomb4.png",
+			"Bomb5": "images/bomb5.png",
+
+			"ExplosionBase1": "images/explosion_base_1.png",
+			"ExplosionPath1": "images/explosion_path_1.png",
+			"ExplosionEnd1": "images/explosion_end_1.png",
+
+			"ExplosionBase2": "images/explosion_base_2.png",
+			"ExplosionPath2": "images/explosion_path_2.png",
+			"ExplosionEnd2": "images/explosion_end_2.png",
+
+			"ExplosionBase3": "images/explosion_base_3.png",
+			"ExplosionPath3": "images/explosion_path_3.png",
+			"ExplosionEnd3": "images/explosion_end_3.png"
+		}
+	},
+
+	"sides": {
+		"player1": ["0"],
+		"player2": ["0"]
+	},
+
+	"game_handler": {
+		"": "base game handler configs",
+		"start_waiting_time": 3,
+		"": "realtime game handler configs",
+		"cycle_duration": 1,
+		"max_total_commands": 2,
+		"max_team_commands": 1,
+		"max_agent_commands": 1,
+		"": "my configs",
+		"maps_dir": "maps/",
+		"cell_size": 64,
+		"bomb_init_timer": 5,
+		"max_bombs": 2
+	}
+}
