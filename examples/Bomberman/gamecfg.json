@@ -68,7 +68,7 @@
 		"max_team_commands": 1,
 		"max_agent_commands": 1,
 		"": "my configs",
-		"maps_dir": "maps/",
+		"map": "maps/1.cm",
 		"cell_size": 64,
 		"bomb_init_timer": 5,
 		"max_bombs": 2

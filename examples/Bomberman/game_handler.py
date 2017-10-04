@@ -24,11 +24,8 @@ class MyRealtimeGameHandler(RealtimeGameHandler):
     def on_initialize(self):
         print('initialize')
 
-        # read map
-        maps_dir = os.path.abspath(self.config['maps_dir'])
-        all_maps = [f for f in os.listdir(maps_dir) if os.path.isfile(os.path.join(maps_dir, f))]
-        selected_map = os.path.join(maps_dir, all_maps[random.randrange(0, len(all_maps))])
-        map_rows = open(selected_map, 'r').read().split('\n')
+        # Read map
+        map_rows = open(self.config['map']).read().split('\n')
         self.num_of_rows = len(map_rows)
         self.num_of_cols = len(map_rows[0])
 
@@ -56,20 +53,20 @@ class MyRealtimeGameHandler(RealtimeGameHandler):
             EDir.Top.name: (0, -1),
             EDir.Right.name: (1, 0),
             EDir.Bottom.name: (0, 1),
-            EDir.Left.name: (-1, 0),
+            EDir.Left.name: (-1, 0)
         }
         self.angles = {
             EDir.Top.name: 90,
             EDir.Right.name: 0,
             EDir.Bottom.name: 270,
-            EDir.Left.name: 180,
+            EDir.Left.name: 180
         }
 
 
     def on_initialize_gui(self):
         print('initialize gui')
 
-        # resize canvas based on map
+        # Resize canvas based on map
         self.canvas.resize_canvas(self.num_of_cols * self.config['cell_size'], self.num_of_rows * self.config['cell_size'])
 
         # Draw cells
@@ -115,9 +112,9 @@ class MyRealtimeGameHandler(RealtimeGameHandler):
                     # Remove bomb and add explosion
                     index_for_remove.append(i)
                     # Draw explosions
-                    # draw the base explosion
+                    # Draw the base explosion
                     self._create_explosion('ExplosionBase' + str(bomb.level), bomb.x, bomb.y)
-                    # draw follows
+                    # Draw follows
                     radius = self.world.explosion_radiuses[bomb.level]
                     for direction in self.steps:
                         pos = (bomb.x, bomb.y)
@@ -129,14 +126,14 @@ class MyRealtimeGameHandler(RealtimeGameHandler):
                             cell = self.world.board[pos[1]][pos[0]]
                             if cell.type in [ECellType.DestroyableBlock, ECellType.UndestroyableBlock]:
                                 if cell.type == ECellType.DestroyableBlock:
-                                    # if destroyable, destroy the block
+                                    # If destroyable, destroy the block
                                     self.canvas.delete_element(cell.ref)
                                     self._create_explosion(image_base_name + str(bomb.level), pos[0], pos[1], angle)
-                                break # hit the block, stop the explosion in this direction
+                                break # Hit the block, stop the explosion in this direction
                             elif cell.type == ECellType.Empty:
                                 self._create_explosion(image_base_name + str(bomb.level), pos[0], pos[1], angle)
 
-            # remove exploded bombs
+            # Remove exploded bombs
             for i in index_for_remove:
                 del self.world.bombs[side][i]
 
@@ -144,7 +141,7 @@ class MyRealtimeGameHandler(RealtimeGameHandler):
         new_positions = {} # Save new positions
 
         for side in self.commands:
-            if not side in self.alives_side: # check bomberman is alive
+            if not side in self.alives_side: # Check bomberman is alive
                 continue
 
             bomberman = self.world.bombermans[side]
@@ -165,14 +162,14 @@ class MyRealtimeGameHandler(RealtimeGameHandler):
                 step = self.steps[command.direction.name]
                 pos = (bomberman.x, bomberman.y)
                 new_pos = self._tuple_sum(pos, step)
-                # check dont move to block
+                # Check dont move to block
                 if self.world.board[new_pos[1]][new_pos[0]].type == ECellType.Empty:
-                    # check dont move to another alive bomberman
+                    # Check dont move to another alive bomberman
                     for other_side in self.alives_side:
-                        if other_side != side: # avoid check with yourself
+                        if other_side != side: # Avoid check with yourself
                             other_bomberman = self.world.bombermans[other_side]
                             if new_pos[0] == other_bomberman.x and new_pos[1] == other_bomberman.y:
-                                break # can't move
+                                break # Can't move
                     else:
                         new_positions[side] = new_pos
 
@@ -190,7 +187,7 @@ class MyRealtimeGameHandler(RealtimeGameHandler):
                 bomberman.y = pos[1]
                 self.canvas.edit_image(side, x=bomberman.x * self.config['cell_size'], y=bomberman.y * self.config['cell_size'])
 
-        # empty commands
+        # Empty commands
         self.commands = {}
 
         # Check for damage
@@ -206,9 +203,9 @@ class MyRealtimeGameHandler(RealtimeGameHandler):
 
         # Check for end of game
         if len(self.alives_side) == 0:
-            self.end_game() # all dead, draw game
+            self.end_game() # All dead, draw game
         elif len(self.alives_side) == 1:
-            # only one alive, winner!
+            # Only one alive, winner!
             self.end_game(self.alives_side[0])
 
 
@@ -219,11 +216,11 @@ class MyRealtimeGameHandler(RealtimeGameHandler):
 
     def on_update_gui(self):
         print('update gui')
-        # move all bombermans to front
+        # Move all bombermans to front
         for side in self.sides:
             self.canvas.bring_to_front(side)
 
-        # apply actions
+        # Apply actions
         self.canvas.apply_actions()
 
 
