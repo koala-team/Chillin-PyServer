@@ -60,7 +60,6 @@ class BaseGameHandler(Component):
         self.canvas.initialize()
         self.on_initialize()
         self.on_initialize_gui()
-        self.on_update_clients()
 
         start_time = int(utcnowts() + 1) + self.config['start_waiting_time']
         msg = StartGame(start_time=start_time)
@@ -77,6 +76,7 @@ class BaseGameHandler(Component):
     def _on_start_game(self):
         self._accept_commands = True
         self.game_running = True
+        self.on_update_clients()
 
 
     @handler('end_game')
@@ -208,8 +208,8 @@ class RealtimeGameHandler(BaseGameHandler):
         self._on_pre_process_cycle()
         self.on_process_cycle()
         self._on_post_process_cycle()
-        self.on_update_clients()
         self.on_update_gui()
+        self.on_update_clients()
         if self.game_running:
             self._change_cycle()
 
