@@ -45,6 +45,7 @@ class AgentAuthenticator:
                     ins_flag = True
             else:
                 side_name = sorted(list(self._sides.keys()))[self._count_joined_teams]
+                side_name = self._allowed_teams.get(client_team_id, side_name)
                 if client_agent_name in self._sides[side_name]:
                     ins_flag = True
                     self._count_joined_teams += 1
