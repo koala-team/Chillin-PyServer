@@ -12,7 +12,7 @@ from ..events.core import broadcast_msg
 from ..events.game_handlers import start_game, end_game, process_cycle
 from ..helpers.parser import Parser
 from ..helpers.messages import StartGame, EndGame, BaseSnapshot, RealtimeSnapshot, TurnbasedSnapshot
-from ..helpers.datetime import utcnowts
+from ..helpers.datetiming import utcnowts, strutcts
 
 
 class BaseGameHandler(Component):
@@ -61,15 +61,21 @@ class BaseGameHandler(Component):
         self.on_initialize()
         self.on_initialize_gui()
 
-        start_time = int(utcnowts() + 1) + self.config['start_waiting_time']
+        if self.config.get('start_time'):
+            start_time = max(strutcts(self.config['start_time'], "%Y-%m-%d %H-%M"), utcnowts())
+        else:
+            start_time = utcnowts()
+        start_time = int(start_time + 1) + self.config['start_waiting_time']
         msg = StartGame(start_time=start_time)
         self.fire(broadcast_msg(msg))
         self._screen.display_start_game(start_time=msg.start_time)
 
-        Timer(
+        t = Timer(
             start_time - utcnowts(),
             lambda : self.fire(start_game())
-        ).start()
+        )
+        t.setDaemon(True)
+        t.start()
 
 
     @handler('start_game')
