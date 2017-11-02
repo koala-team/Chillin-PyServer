@@ -21,6 +21,7 @@ class Protocol:
     def __init__(self, authenticate_func, game_info):
         self._auth_func = authenticate_func
         self._game_info = game_info
+        self._all_messages_data = []
         self._network = Network()
         self._parser = Parser()
         self._clients = set()
@@ -31,6 +32,15 @@ class Protocol:
 
     def _add_client(self, sock):
         self._send_msg(sock, self._game_info)
+        i = 0
+        while i < len(self._all_messages_data):
+            if not self._send_data(sock, self._all_messages_data[i]):
+                self._network.close(sock)
+                return
+            i += 1
+
+        # TODO: some messages may not get delivered here ...
+
         self._lock.acquire()
         self._clients.add(sock)
         self._lock.release()
@@ -44,36 +54,58 @@ class Protocol:
         self._lock.release()
 
 
+    def _can_join(self, sock):
+        if len(self._clients) >= Config.config['gui'].get('max_spectators', 5):
+            return False
+        return True
+
+
     def _accept(self):
 
-        def auth(sock):
-            token = self._network.recv_data(sock)
-            if token and self._auth_func(token):
-                self._send_msg(sock, Auth(authenticated=True))
-                self._add_client(sock)
+        def init(sock):
+            authenticated = False
+            if Config.config['general']['offline_mode']:
+                authenticated = True
             else:
-                self._send_msg(sock, Auth(authenticated=False))
-                self._network.close(sock)
+                token = self._network.recv_data(sock)
+                if token and self._auth_func(token):
+                    authenticated = True
+                    self._send_msg(sock, Auth(authenticated=True))
+                else:
+                    self._send_msg(sock, Auth(authenticated=False))
+                    self._network.close(sock)
+
+            if authenticated:
+                self._add_client(sock)
+
 
         while self._running.is_set():
             sock = self._network.accept()
+            if not self._can_join(sock):
+                self._network.close(sock)
+                continue
+
             if sock and self._running.is_set():
-                if Config.config['general']['offline_mode']:
-                    self._add_client(sock)
-                else:
-                    Thread(target=auth, args=(sock,)).start()
+                t = Thread(target=init, args=(sock,))
+                t.setDaemon(True)
+                t.start()
+
+
+    def _send_data(self, sock, data):
+        return self._network.send_data(sock, data)
 
 
     def _send_msg(self, sock, msg):
         data = self._parser.encode(msg)
-        self._network.send_data(sock, data)
+        return self._send_data(sock, data)
 
 
     def _broadcast_msg(self, msg):
         data = self._parser.encode(msg)
+        self._all_messages_data.append(data)
         disconnected_clients = []
         for sock in self._clients:
-            if not self._network.send_data(sock, data):
+            if not self._send_data(sock, data):
                 disconnected_clients.append(sock)
 
         self._remove_clients(disconnected_clients)
