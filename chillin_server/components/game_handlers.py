@@ -62,7 +62,7 @@ class BaseGameHandler(Component):
         self.on_initialize_gui()
 
         if self.config.get('start_time'):
-            start_time = max(strutcts(self.config['start_time'], "%Y-%m-%d %H-%M"), utcnowts())
+            start_time = max(strutcts(self.config['start_time'], "%Y-%m-%d %H:%M"), utcnowts())
         else:
             start_time = utcnowts()
         start_time = int(start_time + 1) + self.config['start_waiting_time']

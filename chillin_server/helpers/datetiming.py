@@ -6,7 +6,7 @@ from datetime import datetime
 
 
 def utcnowts():
-    return mktime(datetime.now().timetuple())
+    return mktime(datetime.utcnow().timetuple())
 
 
 def strutcts(date_string, format):
