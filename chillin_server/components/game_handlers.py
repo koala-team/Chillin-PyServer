@@ -13,6 +13,7 @@ from ..events.game_handlers import start_game, end_game, process_cycle
 from ..helpers.parser import Parser
 from ..helpers.messages import StartGame, EndGame, BaseSnapshot, RealtimeSnapshot, TurnbasedSnapshot
 from ..helpers.datetiming import utcnowts, strutcts
+from ..gui.canvas import Canvas
 
 
 class BaseGameHandler(Component):
@@ -25,7 +26,7 @@ class BaseGameHandler(Component):
         self._command_processor_threads = []
         self._screen = None
         self.game_running = False
-        self.canvas = None
+        self.canvas = Canvas(None, None) # initialize is not necessary, just for auto completion
 
 
     def _configure(self, config):
