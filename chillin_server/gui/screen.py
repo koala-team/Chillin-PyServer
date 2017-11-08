@@ -8,16 +8,16 @@ from ..config import Config
 from .messages import GameInfo
 from .canvas import Canvas
 from .messages import AgentJoined, AgentLeft, StartGame, EndGame
-from .replay import Replay
+from .replay_manager import ReplayManager
 
 
 class Screen:
 
     def __init__(self, send_queue):
         self._send_queue = send_queue
-        self._replay = Replay()
-        self.canvas = Canvas(self._replay, send_queue)
-        self._replay.store_message(self.game_info())
+        self._replay_manager = ReplayManager()
+        self.canvas = Canvas(self._replay_manager, send_queue)
+        self._replay_manager.store_message(self.game_info())
 
 
     @staticmethod
@@ -30,7 +30,7 @@ class Screen:
 
     def display(self, msg):
         self._send_queue.put(msg)
-        self._replay.store_message(msg)
+        self._replay_manager.store_message(msg)
 
 
     def display_agent_joined(self, side_name, agent_name, team_nickname):

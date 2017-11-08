@@ -10,7 +10,7 @@ from ..config import Config
 from .parser import Parser
 
 
-class Replay:
+class ReplayManager:
 
     REPLAY_FILE_EXTENSION = 'cr'
 
