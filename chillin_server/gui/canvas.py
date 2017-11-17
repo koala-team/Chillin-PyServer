@@ -244,7 +244,7 @@ class Canvas:
         return self._create_element(Text, locals(), custom_ref)
 
 
-    def edit_text(self, ref, x=None, y=None, color=None, font_size=None,
+    def edit_text(self, ref, text=None, x=None, y=None, color=None, font_size=None,
                   font_style=None, font=None, background_color=None, angle=None,
                   center_origin=None, stroke_width=None, stroke_color=None):
         self._edit_element(ref, Text, locals())
