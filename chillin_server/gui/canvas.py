@@ -228,13 +228,13 @@ class Canvas:
     def create_image(self, image_name, x, y,
                      scale_type=ScaleType.NoScale, scale_value=None, angle=None,
                      center_origin=False, stroke_width=None, stroke_color=None,
-                     custom_ref=None):
+                     visible=None, custom_ref=None):
         return self._create_element(Image, locals(), custom_ref)
 
 
     def edit_image(self, ref, x=None, y=None,
                    scale_type=None, scale_value=None, angle=None,
-                   center_origin=None, stroke_width=None, stroke_color=None):
+                   center_origin=None, stroke_width=None, stroke_color=None, visible=None):
         self._edit_element(ref, Image, locals())
 
 

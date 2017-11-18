@@ -79,6 +79,7 @@ angle = float
 center_origin = boolean
 stroke_width = ushort
 stroke_color = Color
+visible = boolean
 
 
 [FontStyle]

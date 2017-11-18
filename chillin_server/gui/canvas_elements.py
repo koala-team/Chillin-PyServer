@@ -862,11 +862,11 @@ class Image(object):
 		return 'Image'
 
 
-	def __init__(self, image_name=None, x=None, y=None, scale_type=None, scale_value=None, angle=None, center_origin=None, stroke_width=None, stroke_color=None):
-		self.initialize(image_name, x, y, scale_type, scale_value, angle, center_origin, stroke_width, stroke_color)
+	def __init__(self, image_name=None, x=None, y=None, scale_type=None, scale_value=None, angle=None, center_origin=None, stroke_width=None, stroke_color=None, visible=None):
+		self.initialize(image_name, x, y, scale_type, scale_value, angle, center_origin, stroke_width, stroke_color, visible)
 	
 
-	def initialize(self, image_name=None, x=None, y=None, scale_type=None, scale_value=None, angle=None, center_origin=None, stroke_width=None, stroke_color=None):
+	def initialize(self, image_name=None, x=None, y=None, scale_type=None, scale_value=None, angle=None, center_origin=None, stroke_width=None, stroke_color=None, visible=None):
 		self.image_name = image_name
 		self.x = x
 		self.y = y
@@ -876,6 +876,7 @@ class Image(object):
 		self.center_origin = center_origin
 		self.stroke_width = stroke_width
 		self.stroke_color = stroke_color
+		self.visible = visible
 	
 
 	def serialize(self):
@@ -932,6 +933,11 @@ class Image(object):
 		s += b'\x00' if self.stroke_color is None else b'\x01'
 		if self.stroke_color is not None:
 			s += self.stroke_color.serialize()
+		
+		# serialize self.visible
+		s += b'\x00' if self.visible is None else b'\x01'
+		if self.visible is not None:
+			s += struct.pack('?', self.visible)
 		
 		return s
 	
@@ -1026,6 +1032,15 @@ class Image(object):
 		else:
 			self.stroke_color = None
 		
+		# deserialize self.visible
+		tmp73 = struct.unpack('B', s[offset:offset + 1])[0]
+		offset += 1
+		if tmp73:
+			self.visible = struct.unpack('?', s[offset:offset + 1])[0]
+			offset += 1
+		else:
+			self.visible = None
+		
 		return offset
 
 
@@ -1067,12 +1082,12 @@ class Text(object):
 		# serialize self.text
 		s += b'\x00' if self.text is None else b'\x01'
 		if self.text is not None:
-			tmp73 = b''
-			tmp73 += struct.pack('I', len(self.text))
-			while len(tmp73) and tmp73[-1] == b'\x00'[0]:
-				tmp73 = tmp73[:-1]
-			s += struct.pack('B', len(tmp73))
-			s += tmp73
+			tmp74 = b''
+			tmp74 += struct.pack('I', len(self.text))
+			while len(tmp74) and tmp74[-1] == b'\x00'[0]:
+				tmp74 = tmp74[:-1]
+			s += struct.pack('B', len(tmp74))
+			s += tmp74
 			
 			s += self.text.encode('ISO-8859-1') if PY3 else self.text
 		
@@ -1104,12 +1119,12 @@ class Text(object):
 		# serialize self.font
 		s += b'\x00' if self.font is None else b'\x01'
 		if self.font is not None:
-			tmp74 = b''
-			tmp74 += struct.pack('I', len(self.font))
-			while len(tmp74) and tmp74[-1] == b'\x00'[0]:
-				tmp74 = tmp74[:-1]
-			s += struct.pack('B', len(tmp74))
-			s += tmp74
+			tmp75 = b''
+			tmp75 += struct.pack('I', len(self.font))
+			while len(tmp75) and tmp75[-1] == b'\x00'[0]:
+				tmp75 = tmp75[:-1]
+			s += struct.pack('B', len(tmp75))
+			s += tmp75
 			
 			s += self.font.encode('ISO-8859-1') if PY3 else self.font
 		
@@ -1143,123 +1158,123 @@ class Text(object):
 
 	def deserialize(self, s, offset=0):
 		# deserialize self.text
-		tmp75 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp76 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp75:
-			tmp76 = struct.unpack('B', s[offset:offset + 1])[0]
+		if tmp76:
+			tmp77 = struct.unpack('B', s[offset:offset + 1])[0]
 			offset += 1
-			tmp77 = s[offset:offset + tmp76]
-			offset += tmp76
-			tmp77 += b'\x00' * (4 - tmp76)
-			tmp78 = struct.unpack('I', tmp77)[0]
+			tmp78 = s[offset:offset + tmp77]
+			offset += tmp77
+			tmp78 += b'\x00' * (4 - tmp77)
+			tmp79 = struct.unpack('I', tmp78)[0]
 			
-			self.text = s[offset:offset + tmp78].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp78]
-			offset += tmp78
+			self.text = s[offset:offset + tmp79].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp79]
+			offset += tmp79
 		else:
 			self.text = None
 		
 		# deserialize self.x
-		tmp79 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp80 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp79:
+		if tmp80:
 			self.x = struct.unpack('h', s[offset:offset + 2])[0]
 			offset += 2
 		else:
 			self.x = None
 		
 		# deserialize self.y
-		tmp80 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp81 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp80:
+		if tmp81:
 			self.y = struct.unpack('h', s[offset:offset + 2])[0]
 			offset += 2
 		else:
 			self.y = None
 		
 		# deserialize self.color
-		tmp81 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp82 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp81:
+		if tmp82:
 			self.color = Color()
 			offset = self.color.deserialize(s, offset)
 		else:
 			self.color = None
 		
 		# deserialize self.font_size
-		tmp82 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp83 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp82:
+		if tmp83:
 			self.font_size = struct.unpack('H', s[offset:offset + 2])[0]
 			offset += 2
 		else:
 			self.font_size = None
 		
 		# deserialize self.font_style
-		tmp83 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp84 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp83:
-			tmp84 = struct.unpack('B', s[offset:offset + 1])[0]
+		if tmp84:
+			tmp85 = struct.unpack('B', s[offset:offset + 1])[0]
 			offset += 1
-			self.font_style = FontStyle(tmp84)
+			self.font_style = FontStyle(tmp85)
 		else:
 			self.font_style = None
 		
 		# deserialize self.font
-		tmp85 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp86 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp85:
-			tmp86 = struct.unpack('B', s[offset:offset + 1])[0]
+		if tmp86:
+			tmp87 = struct.unpack('B', s[offset:offset + 1])[0]
 			offset += 1
-			tmp87 = s[offset:offset + tmp86]
-			offset += tmp86
-			tmp87 += b'\x00' * (4 - tmp86)
-			tmp88 = struct.unpack('I', tmp87)[0]
+			tmp88 = s[offset:offset + tmp87]
+			offset += tmp87
+			tmp88 += b'\x00' * (4 - tmp87)
+			tmp89 = struct.unpack('I', tmp88)[0]
 			
-			self.font = s[offset:offset + tmp88].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp88]
-			offset += tmp88
+			self.font = s[offset:offset + tmp89].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp89]
+			offset += tmp89
 		else:
 			self.font = None
 		
 		# deserialize self.background_color
-		tmp89 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp90 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp89:
+		if tmp90:
 			self.background_color = Color()
 			offset = self.background_color.deserialize(s, offset)
 		else:
 			self.background_color = None
 		
 		# deserialize self.angle
-		tmp90 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp91 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp90:
+		if tmp91:
 			self.angle = struct.unpack('f', s[offset:offset + 4])[0]
 			offset += 4
 		else:
 			self.angle = None
 		
 		# deserialize self.center_origin
-		tmp91 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp92 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp91:
+		if tmp92:
 			self.center_origin = struct.unpack('?', s[offset:offset + 1])[0]
 			offset += 1
 		else:
 			self.center_origin = None
 		
 		# deserialize self.stroke_width
-		tmp92 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp93 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp92:
+		if tmp93:
 			self.stroke_width = struct.unpack('H', s[offset:offset + 2])[0]
 			offset += 2
 		else:
 			self.stroke_width = None
 		
 		# deserialize self.stroke_color
-		tmp93 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp94 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp93:
+		if tmp94:
 			self.stroke_color = Color()
 			offset = self.stroke_color.deserialize(s, offset)
 		else:
