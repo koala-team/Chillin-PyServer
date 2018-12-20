@@ -27,6 +27,7 @@ setup(
     install_requires=[
         'circuits==3.2',
         'pydblite==3.0.4',
+        'koala-serializer==0.6.2',
         'configparser==3.5.0',
         'enum34==1.1.6'
     ],
