@@ -13,7 +13,7 @@ from ..events.game_handlers import start_game, end_game, process_cycle
 from ..helpers.parser import Parser
 from ..helpers.messages import StartGame, EndGame, BaseSnapshot, RealtimeSnapshot, TurnbasedSnapshot
 from ..helpers.datetiming import utcnowts, strutcts
-from ..gui.canvas import Canvas
+from ..gui.scene import Scene
 
 
 class BaseGameHandler(Component):
@@ -26,7 +26,7 @@ class BaseGameHandler(Component):
         self._command_processor_threads = []
         self._screen = None
         self.game_running = False
-        self.canvas = Canvas(None, None) # initialize is not necessary, just for auto completion
+        self.scene = Scene(None, None) # initialize is not necessary, just for auto completion
 
 
     def _configure(self, config):
@@ -36,7 +36,7 @@ class BaseGameHandler(Component):
 
     def set_screen(self, screen):
         self._screen = screen
-        self.canvas = screen.canvas
+        self.scene = screen.scene
 
 
     @handler('cmd_received')
@@ -58,7 +58,7 @@ class BaseGameHandler(Component):
 
     @handler('all_agents_joined')
     def _on_all_agents_joined(self):
-        self.canvas.initialize()
+        self.scene.initialize()
         self.on_initialize()
         self.on_initialize_gui()
 

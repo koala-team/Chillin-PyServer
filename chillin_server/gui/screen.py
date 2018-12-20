@@ -6,7 +6,7 @@ import sys
 # project imports
 from ..config import Config
 from .messages import GameInfo
-from .canvas import Canvas
+from .scene import Scene
 from .messages import AgentJoined, AgentLeft, StartGame, EndGame
 from .replay_manager import ReplayManager
 
@@ -16,7 +16,7 @@ class Screen:
     def __init__(self, send_queue):
         self._send_queue = send_queue
         self._replay_manager = ReplayManager()
-        self.canvas = Canvas(self._replay_manager, send_queue)
+        self.scene = Scene(self._replay_manager, send_queue)
         self._replay_manager.store_message(self.game_info())
 
 
@@ -24,7 +24,8 @@ class Screen:
     def game_info():
         return GameInfo(
             game_name = Config.config['general']['game_name'],
-            sides = Config.config['sides']
+            sides = Config.config['sides'],
+            gui_cycle_duration = Config.config['gui']['cycle_duration']
         )
 
 

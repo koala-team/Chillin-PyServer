@@ -8,7 +8,7 @@ import inspect
 from enum import Enum
 
 # project imports
-from . import messages, canvas_actions, canvas_elements
+from . import messages, scene_actions
 
 PY3 = sys.version_info > (3,)
 
@@ -35,7 +35,7 @@ class Parser:
 
         msg_type = msg.type
 
-        if msg_type == messages.CanvasAction.name():
+        if msg_type == messages.SceneActions.name():
             msg = res
             res = []
             for i in range(len(msg.action_types)):
@@ -74,8 +74,7 @@ class MessageFactory:
     def __init__(self):
         self._installed_messages = self._load_ks_objects([
             messages,
-            canvas_actions,
-            canvas_elements
+            scene_actions
         ])
 
 

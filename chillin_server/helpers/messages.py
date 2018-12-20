@@ -897,12 +897,12 @@ class RealtimeSnapshot(BaseSnapshot):
 		return 'RealtimeSnapshot'
 
 
-	def __init__(self, current_cycle=None, cycle_duration=None):
-		self.initialize(current_cycle, cycle_duration)
+	def __init__(self, world_payload=None, current_cycle=None, cycle_duration=None):
+		self.initialize(world_payload, current_cycle, cycle_duration)
 	
 
-	def initialize(self, current_cycle=None, cycle_duration=None):
-		BaseSnapshot.initialize(self)
+	def initialize(self, world_payload=None, current_cycle=None, cycle_duration=None):
+		BaseSnapshot.initialize(self, world_payload)
 		
 		self.current_cycle = current_cycle
 		self.cycle_duration = cycle_duration
@@ -959,12 +959,12 @@ class TurnbasedSnapshot(RealtimeSnapshot):
 		return 'TurnbasedSnapshot'
 
 
-	def __init__(self, turn_allowed_sides=None):
-		self.initialize(turn_allowed_sides)
+	def __init__(self, world_payload=None, current_cycle=None, cycle_duration=None, turn_allowed_sides=None):
+		self.initialize(world_payload, current_cycle, cycle_duration, turn_allowed_sides)
 	
 
-	def initialize(self, turn_allowed_sides=None):
-		RealtimeSnapshot.initialize(self)
+	def initialize(self, world_payload=None, current_cycle=None, cycle_duration=None, turn_allowed_sides=None):
+		RealtimeSnapshot.initialize(self, world_payload, current_cycle, cycle_duration)
 		
 		self.turn_allowed_sides = turn_allowed_sides
 	
@@ -1127,12 +1127,12 @@ class RealtimeCommand(BaseCommand):
 		return 'RealtimeCommand'
 
 
-	def __init__(self, cycle=None):
-		self.initialize(cycle)
+	def __init__(self, type=None, payload=None, cycle=None):
+		self.initialize(type, payload, cycle)
 	
 
-	def initialize(self, cycle=None):
-		BaseCommand.initialize(self)
+	def initialize(self, type=None, payload=None, cycle=None):
+		BaseCommand.initialize(self, type, payload)
 		
 		self.cycle = cycle
 	
@@ -1174,14 +1174,12 @@ class TurnbasedCommand(RealtimeCommand):
 		return 'TurnbasedCommand'
 
 
-	def __init__(self):
-		self.initialize()
+	def __init__(self, type=None, payload=None, cycle=None):
+		self.initialize(type, payload, cycle)
 	
 
-	def initialize(self):
-		RealtimeCommand.initialize(self)
-		
-		return
+	def initialize(self, type=None, payload=None, cycle=None):
+		RealtimeCommand.initialize(self, type, payload, cycle)
 	
 
 	def serialize(self):

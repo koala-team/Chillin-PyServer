@@ -3,7 +3,6 @@ _def = class
 type = string
 payload = string
 
-
 ##########################################################
 ##########################################################
 
@@ -15,8 +14,8 @@ authenticated = boolean
 [GameInfo]
 _def = class
 game_name = string
-sides = map <string, list<string> >
-
+sides = map<string, list<string>>
+gui_cycle_duration = float
 
 ##########################################################
 
@@ -32,7 +31,6 @@ _def = class
 side_name = string
 agent_name = string
 
-
 ##########################################################
 
 [StartGame]
@@ -43,12 +41,11 @@ start_time = uint
 [EndGame]
 _def = class
 winner_sidename = string
-details = map <string, map<string, string> >
-
+details = map<string, map<string, string>>
 
 ##########################################################
 
-[CanvasAction]
+[SceneActions]
 _def = class
-action_types = list <string>
-action_payloads = list <string>
+action_types = list<string>
+action_payloads = list<string>
