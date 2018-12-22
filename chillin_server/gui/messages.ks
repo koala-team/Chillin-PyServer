@@ -16,6 +16,7 @@ _def = class
 game_name = string
 sides = map<string, list<string>>
 gui_cycle_duration = float
+gui_side_colors = map<string, string>
 
 ##########################################################
 

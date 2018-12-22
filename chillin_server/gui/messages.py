@@ -136,14 +136,15 @@ class GameInfo(object):
 		return 'GameInfo'
 
 
-	def __init__(self, game_name=None, sides=None, gui_cycle_duration=None):
-		self.initialize(game_name, sides, gui_cycle_duration)
+	def __init__(self, game_name=None, sides=None, gui_cycle_duration=None, gui_side_colors=None):
+		self.initialize(game_name, sides, gui_cycle_duration, gui_side_colors)
 	
 
-	def initialize(self, game_name=None, sides=None, gui_cycle_duration=None):
+	def initialize(self, game_name=None, sides=None, gui_cycle_duration=None, gui_side_colors=None):
 		self.game_name = game_name
 		self.sides = sides
 		self.gui_cycle_duration = gui_cycle_duration
+		self.gui_side_colors = gui_side_colors
 	
 
 	def serialize(self):
@@ -208,27 +209,43 @@ class GameInfo(object):
 		if self.gui_cycle_duration is not None:
 			s += struct.pack('f', self.gui_cycle_duration)
 		
+		# serialize self.gui_side_colors
+		s += b'\x00' if self.gui_side_colors is None else b'\x01'
+		if self.gui_side_colors is not None:
+			tmp18 = b''
+			tmp18 += struct.pack('I', len(self.gui_side_colors))
+			while len(tmp18) and tmp18[-1] == b'\x00'[0]:
+				tmp18 = tmp18[:-1]
+			s += struct.pack('B', len(tmp18))
+			s += tmp18
+			
+			for tmp19 in self.gui_side_colors:
+				s += b'\x00' if tmp19 is None else b'\x01'
+				if tmp19 is not None:
+					tmp20 = b''
+					tmp20 += struct.pack('I', len(tmp19))
+					while len(tmp20) and tmp20[-1] == b'\x00'[0]:
+						tmp20 = tmp20[:-1]
+					s += struct.pack('B', len(tmp20))
+					s += tmp20
+					
+					s += tmp19.encode('ISO-8859-1') if PY3 else tmp19
+				s += b'\x00' if self.gui_side_colors[tmp19] is None else b'\x01'
+				if self.gui_side_colors[tmp19] is not None:
+					tmp21 = b''
+					tmp21 += struct.pack('I', len(self.gui_side_colors[tmp19]))
+					while len(tmp21) and tmp21[-1] == b'\x00'[0]:
+						tmp21 = tmp21[:-1]
+					s += struct.pack('B', len(tmp21))
+					s += tmp21
+					
+					s += self.gui_side_colors[tmp19].encode('ISO-8859-1') if PY3 else self.gui_side_colors[tmp19]
+		
 		return s
 	
 
 	def deserialize(self, s, offset=0):
 		# deserialize self.game_name
-		tmp18 = struct.unpack('B', s[offset:offset + 1])[0]
-		offset += 1
-		if tmp18:
-			tmp19 = struct.unpack('B', s[offset:offset + 1])[0]
-			offset += 1
-			tmp20 = s[offset:offset + tmp19]
-			offset += tmp19
-			tmp20 += b'\x00' * (4 - tmp19)
-			tmp21 = struct.unpack('I', tmp20)[0]
-			
-			self.game_name = s[offset:offset + tmp21].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp21]
-			offset += tmp21
-		else:
-			self.game_name = None
-		
-		# deserialize self.sides
 		tmp22 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
 		if tmp22:
@@ -239,22 +256,24 @@ class GameInfo(object):
 			tmp24 += b'\x00' * (4 - tmp23)
 			tmp25 = struct.unpack('I', tmp24)[0]
 			
+			self.game_name = s[offset:offset + tmp25].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp25]
+			offset += tmp25
+		else:
+			self.game_name = None
+		
+		# deserialize self.sides
+		tmp26 = struct.unpack('B', s[offset:offset + 1])[0]
+		offset += 1
+		if tmp26:
+			tmp27 = struct.unpack('B', s[offset:offset + 1])[0]
+			offset += 1
+			tmp28 = s[offset:offset + tmp27]
+			offset += tmp27
+			tmp28 += b'\x00' * (4 - tmp27)
+			tmp29 = struct.unpack('I', tmp28)[0]
+			
 			self.sides = {}
-			for tmp26 in range(tmp25):
-				tmp29 = struct.unpack('B', s[offset:offset + 1])[0]
-				offset += 1
-				if tmp29:
-					tmp30 = struct.unpack('B', s[offset:offset + 1])[0]
-					offset += 1
-					tmp31 = s[offset:offset + tmp30]
-					offset += tmp30
-					tmp31 += b'\x00' * (4 - tmp30)
-					tmp32 = struct.unpack('I', tmp31)[0]
-					
-					tmp27 = s[offset:offset + tmp32].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp32]
-					offset += tmp32
-				else:
-					tmp27 = None
+			for tmp30 in range(tmp29):
 				tmp33 = struct.unpack('B', s[offset:offset + 1])[0]
 				offset += 1
 				if tmp33:
@@ -265,37 +284,96 @@ class GameInfo(object):
 					tmp35 += b'\x00' * (4 - tmp34)
 					tmp36 = struct.unpack('I', tmp35)[0]
 					
-					tmp28 = []
-					for tmp37 in range(tmp36):
-						tmp39 = struct.unpack('B', s[offset:offset + 1])[0]
-						offset += 1
-						if tmp39:
-							tmp40 = struct.unpack('B', s[offset:offset + 1])[0]
-							offset += 1
-							tmp41 = s[offset:offset + tmp40]
-							offset += tmp40
-							tmp41 += b'\x00' * (4 - tmp40)
-							tmp42 = struct.unpack('I', tmp41)[0]
-							
-							tmp38 = s[offset:offset + tmp42].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp42]
-							offset += tmp42
-						else:
-							tmp38 = None
-						tmp28.append(tmp38)
+					tmp31 = s[offset:offset + tmp36].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp36]
+					offset += tmp36
 				else:
-					tmp28 = None
-				self.sides[tmp27] = tmp28
+					tmp31 = None
+				tmp37 = struct.unpack('B', s[offset:offset + 1])[0]
+				offset += 1
+				if tmp37:
+					tmp38 = struct.unpack('B', s[offset:offset + 1])[0]
+					offset += 1
+					tmp39 = s[offset:offset + tmp38]
+					offset += tmp38
+					tmp39 += b'\x00' * (4 - tmp38)
+					tmp40 = struct.unpack('I', tmp39)[0]
+					
+					tmp32 = []
+					for tmp41 in range(tmp40):
+						tmp43 = struct.unpack('B', s[offset:offset + 1])[0]
+						offset += 1
+						if tmp43:
+							tmp44 = struct.unpack('B', s[offset:offset + 1])[0]
+							offset += 1
+							tmp45 = s[offset:offset + tmp44]
+							offset += tmp44
+							tmp45 += b'\x00' * (4 - tmp44)
+							tmp46 = struct.unpack('I', tmp45)[0]
+							
+							tmp42 = s[offset:offset + tmp46].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp46]
+							offset += tmp46
+						else:
+							tmp42 = None
+						tmp32.append(tmp42)
+				else:
+					tmp32 = None
+				self.sides[tmp31] = tmp32
 		else:
 			self.sides = None
 		
 		# deserialize self.gui_cycle_duration
-		tmp43 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp47 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp43:
+		if tmp47:
 			self.gui_cycle_duration = struct.unpack('f', s[offset:offset + 4])[0]
 			offset += 4
 		else:
 			self.gui_cycle_duration = None
+		
+		# deserialize self.gui_side_colors
+		tmp48 = struct.unpack('B', s[offset:offset + 1])[0]
+		offset += 1
+		if tmp48:
+			tmp49 = struct.unpack('B', s[offset:offset + 1])[0]
+			offset += 1
+			tmp50 = s[offset:offset + tmp49]
+			offset += tmp49
+			tmp50 += b'\x00' * (4 - tmp49)
+			tmp51 = struct.unpack('I', tmp50)[0]
+			
+			self.gui_side_colors = {}
+			for tmp52 in range(tmp51):
+				tmp55 = struct.unpack('B', s[offset:offset + 1])[0]
+				offset += 1
+				if tmp55:
+					tmp56 = struct.unpack('B', s[offset:offset + 1])[0]
+					offset += 1
+					tmp57 = s[offset:offset + tmp56]
+					offset += tmp56
+					tmp57 += b'\x00' * (4 - tmp56)
+					tmp58 = struct.unpack('I', tmp57)[0]
+					
+					tmp53 = s[offset:offset + tmp58].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp58]
+					offset += tmp58
+				else:
+					tmp53 = None
+				tmp59 = struct.unpack('B', s[offset:offset + 1])[0]
+				offset += 1
+				if tmp59:
+					tmp60 = struct.unpack('B', s[offset:offset + 1])[0]
+					offset += 1
+					tmp61 = s[offset:offset + tmp60]
+					offset += tmp60
+					tmp61 += b'\x00' * (4 - tmp60)
+					tmp62 = struct.unpack('I', tmp61)[0]
+					
+					tmp54 = s[offset:offset + tmp62].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp62]
+					offset += tmp62
+				else:
+					tmp54 = None
+				self.gui_side_colors[tmp53] = tmp54
+		else:
+			self.gui_side_colors = None
 		
 		return offset
 
@@ -323,36 +401,36 @@ class AgentJoined(object):
 		# serialize self.side_name
 		s += b'\x00' if self.side_name is None else b'\x01'
 		if self.side_name is not None:
-			tmp44 = b''
-			tmp44 += struct.pack('I', len(self.side_name))
-			while len(tmp44) and tmp44[-1] == b'\x00'[0]:
-				tmp44 = tmp44[:-1]
-			s += struct.pack('B', len(tmp44))
-			s += tmp44
+			tmp63 = b''
+			tmp63 += struct.pack('I', len(self.side_name))
+			while len(tmp63) and tmp63[-1] == b'\x00'[0]:
+				tmp63 = tmp63[:-1]
+			s += struct.pack('B', len(tmp63))
+			s += tmp63
 			
 			s += self.side_name.encode('ISO-8859-1') if PY3 else self.side_name
 		
 		# serialize self.agent_name
 		s += b'\x00' if self.agent_name is None else b'\x01'
 		if self.agent_name is not None:
-			tmp45 = b''
-			tmp45 += struct.pack('I', len(self.agent_name))
-			while len(tmp45) and tmp45[-1] == b'\x00'[0]:
-				tmp45 = tmp45[:-1]
-			s += struct.pack('B', len(tmp45))
-			s += tmp45
+			tmp64 = b''
+			tmp64 += struct.pack('I', len(self.agent_name))
+			while len(tmp64) and tmp64[-1] == b'\x00'[0]:
+				tmp64 = tmp64[:-1]
+			s += struct.pack('B', len(tmp64))
+			s += tmp64
 			
 			s += self.agent_name.encode('ISO-8859-1') if PY3 else self.agent_name
 		
 		# serialize self.team_nickname
 		s += b'\x00' if self.team_nickname is None else b'\x01'
 		if self.team_nickname is not None:
-			tmp46 = b''
-			tmp46 += struct.pack('I', len(self.team_nickname))
-			while len(tmp46) and tmp46[-1] == b'\x00'[0]:
-				tmp46 = tmp46[:-1]
-			s += struct.pack('B', len(tmp46))
-			s += tmp46
+			tmp65 = b''
+			tmp65 += struct.pack('I', len(self.team_nickname))
+			while len(tmp65) and tmp65[-1] == b'\x00'[0]:
+				tmp65 = tmp65[:-1]
+			s += struct.pack('B', len(tmp65))
+			s += tmp65
 			
 			s += self.team_nickname.encode('ISO-8859-1') if PY3 else self.team_nickname
 		
@@ -361,50 +439,50 @@ class AgentJoined(object):
 
 	def deserialize(self, s, offset=0):
 		# deserialize self.side_name
-		tmp47 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp66 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp47:
-			tmp48 = struct.unpack('B', s[offset:offset + 1])[0]
+		if tmp66:
+			tmp67 = struct.unpack('B', s[offset:offset + 1])[0]
 			offset += 1
-			tmp49 = s[offset:offset + tmp48]
-			offset += tmp48
-			tmp49 += b'\x00' * (4 - tmp48)
-			tmp50 = struct.unpack('I', tmp49)[0]
+			tmp68 = s[offset:offset + tmp67]
+			offset += tmp67
+			tmp68 += b'\x00' * (4 - tmp67)
+			tmp69 = struct.unpack('I', tmp68)[0]
 			
-			self.side_name = s[offset:offset + tmp50].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp50]
-			offset += tmp50
+			self.side_name = s[offset:offset + tmp69].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp69]
+			offset += tmp69
 		else:
 			self.side_name = None
 		
 		# deserialize self.agent_name
-		tmp51 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp70 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp51:
-			tmp52 = struct.unpack('B', s[offset:offset + 1])[0]
+		if tmp70:
+			tmp71 = struct.unpack('B', s[offset:offset + 1])[0]
 			offset += 1
-			tmp53 = s[offset:offset + tmp52]
-			offset += tmp52
-			tmp53 += b'\x00' * (4 - tmp52)
-			tmp54 = struct.unpack('I', tmp53)[0]
+			tmp72 = s[offset:offset + tmp71]
+			offset += tmp71
+			tmp72 += b'\x00' * (4 - tmp71)
+			tmp73 = struct.unpack('I', tmp72)[0]
 			
-			self.agent_name = s[offset:offset + tmp54].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp54]
-			offset += tmp54
+			self.agent_name = s[offset:offset + tmp73].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp73]
+			offset += tmp73
 		else:
 			self.agent_name = None
 		
 		# deserialize self.team_nickname
-		tmp55 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp74 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp55:
-			tmp56 = struct.unpack('B', s[offset:offset + 1])[0]
+		if tmp74:
+			tmp75 = struct.unpack('B', s[offset:offset + 1])[0]
 			offset += 1
-			tmp57 = s[offset:offset + tmp56]
-			offset += tmp56
-			tmp57 += b'\x00' * (4 - tmp56)
-			tmp58 = struct.unpack('I', tmp57)[0]
+			tmp76 = s[offset:offset + tmp75]
+			offset += tmp75
+			tmp76 += b'\x00' * (4 - tmp75)
+			tmp77 = struct.unpack('I', tmp76)[0]
 			
-			self.team_nickname = s[offset:offset + tmp58].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp58]
-			offset += tmp58
+			self.team_nickname = s[offset:offset + tmp77].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp77]
+			offset += tmp77
 		else:
 			self.team_nickname = None
 		
@@ -433,24 +511,24 @@ class AgentLeft(object):
 		# serialize self.side_name
 		s += b'\x00' if self.side_name is None else b'\x01'
 		if self.side_name is not None:
-			tmp59 = b''
-			tmp59 += struct.pack('I', len(self.side_name))
-			while len(tmp59) and tmp59[-1] == b'\x00'[0]:
-				tmp59 = tmp59[:-1]
-			s += struct.pack('B', len(tmp59))
-			s += tmp59
+			tmp78 = b''
+			tmp78 += struct.pack('I', len(self.side_name))
+			while len(tmp78) and tmp78[-1] == b'\x00'[0]:
+				tmp78 = tmp78[:-1]
+			s += struct.pack('B', len(tmp78))
+			s += tmp78
 			
 			s += self.side_name.encode('ISO-8859-1') if PY3 else self.side_name
 		
 		# serialize self.agent_name
 		s += b'\x00' if self.agent_name is None else b'\x01'
 		if self.agent_name is not None:
-			tmp60 = b''
-			tmp60 += struct.pack('I', len(self.agent_name))
-			while len(tmp60) and tmp60[-1] == b'\x00'[0]:
-				tmp60 = tmp60[:-1]
-			s += struct.pack('B', len(tmp60))
-			s += tmp60
+			tmp79 = b''
+			tmp79 += struct.pack('I', len(self.agent_name))
+			while len(tmp79) and tmp79[-1] == b'\x00'[0]:
+				tmp79 = tmp79[:-1]
+			s += struct.pack('B', len(tmp79))
+			s += tmp79
 			
 			s += self.agent_name.encode('ISO-8859-1') if PY3 else self.agent_name
 		
@@ -459,34 +537,34 @@ class AgentLeft(object):
 
 	def deserialize(self, s, offset=0):
 		# deserialize self.side_name
-		tmp61 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp80 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp61:
-			tmp62 = struct.unpack('B', s[offset:offset + 1])[0]
+		if tmp80:
+			tmp81 = struct.unpack('B', s[offset:offset + 1])[0]
 			offset += 1
-			tmp63 = s[offset:offset + tmp62]
-			offset += tmp62
-			tmp63 += b'\x00' * (4 - tmp62)
-			tmp64 = struct.unpack('I', tmp63)[0]
+			tmp82 = s[offset:offset + tmp81]
+			offset += tmp81
+			tmp82 += b'\x00' * (4 - tmp81)
+			tmp83 = struct.unpack('I', tmp82)[0]
 			
-			self.side_name = s[offset:offset + tmp64].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp64]
-			offset += tmp64
+			self.side_name = s[offset:offset + tmp83].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp83]
+			offset += tmp83
 		else:
 			self.side_name = None
 		
 		# deserialize self.agent_name
-		tmp65 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp84 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp65:
-			tmp66 = struct.unpack('B', s[offset:offset + 1])[0]
+		if tmp84:
+			tmp85 = struct.unpack('B', s[offset:offset + 1])[0]
 			offset += 1
-			tmp67 = s[offset:offset + tmp66]
-			offset += tmp66
-			tmp67 += b'\x00' * (4 - tmp66)
-			tmp68 = struct.unpack('I', tmp67)[0]
+			tmp86 = s[offset:offset + tmp85]
+			offset += tmp85
+			tmp86 += b'\x00' * (4 - tmp85)
+			tmp87 = struct.unpack('I', tmp86)[0]
 			
-			self.agent_name = s[offset:offset + tmp68].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp68]
-			offset += tmp68
+			self.agent_name = s[offset:offset + tmp87].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp87]
+			offset += tmp87
 		else:
 			self.agent_name = None
 		
@@ -521,9 +599,9 @@ class StartGame(object):
 
 	def deserialize(self, s, offset=0):
 		# deserialize self.start_time
-		tmp69 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp88 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp69:
+		if tmp88:
 			self.start_time = struct.unpack('I', s[offset:offset + 4])[0]
 			offset += 4
 		else:
@@ -554,158 +632,158 @@ class EndGame(object):
 		# serialize self.winner_sidename
 		s += b'\x00' if self.winner_sidename is None else b'\x01'
 		if self.winner_sidename is not None:
-			tmp70 = b''
-			tmp70 += struct.pack('I', len(self.winner_sidename))
-			while len(tmp70) and tmp70[-1] == b'\x00'[0]:
-				tmp70 = tmp70[:-1]
-			s += struct.pack('B', len(tmp70))
-			s += tmp70
+			tmp89 = b''
+			tmp89 += struct.pack('I', len(self.winner_sidename))
+			while len(tmp89) and tmp89[-1] == b'\x00'[0]:
+				tmp89 = tmp89[:-1]
+			s += struct.pack('B', len(tmp89))
+			s += tmp89
 			
 			s += self.winner_sidename.encode('ISO-8859-1') if PY3 else self.winner_sidename
 		
 		# serialize self.details
 		s += b'\x00' if self.details is None else b'\x01'
 		if self.details is not None:
-			tmp71 = b''
-			tmp71 += struct.pack('I', len(self.details))
-			while len(tmp71) and tmp71[-1] == b'\x00'[0]:
-				tmp71 = tmp71[:-1]
-			s += struct.pack('B', len(tmp71))
-			s += tmp71
+			tmp90 = b''
+			tmp90 += struct.pack('I', len(self.details))
+			while len(tmp90) and tmp90[-1] == b'\x00'[0]:
+				tmp90 = tmp90[:-1]
+			s += struct.pack('B', len(tmp90))
+			s += tmp90
 			
-			for tmp72 in self.details:
-				s += b'\x00' if tmp72 is None else b'\x01'
-				if tmp72 is not None:
-					tmp73 = b''
-					tmp73 += struct.pack('I', len(tmp72))
-					while len(tmp73) and tmp73[-1] == b'\x00'[0]:
-						tmp73 = tmp73[:-1]
-					s += struct.pack('B', len(tmp73))
-					s += tmp73
+			for tmp91 in self.details:
+				s += b'\x00' if tmp91 is None else b'\x01'
+				if tmp91 is not None:
+					tmp92 = b''
+					tmp92 += struct.pack('I', len(tmp91))
+					while len(tmp92) and tmp92[-1] == b'\x00'[0]:
+						tmp92 = tmp92[:-1]
+					s += struct.pack('B', len(tmp92))
+					s += tmp92
 					
-					s += tmp72.encode('ISO-8859-1') if PY3 else tmp72
-				s += b'\x00' if self.details[tmp72] is None else b'\x01'
-				if self.details[tmp72] is not None:
-					tmp74 = b''
-					tmp74 += struct.pack('I', len(self.details[tmp72]))
-					while len(tmp74) and tmp74[-1] == b'\x00'[0]:
-						tmp74 = tmp74[:-1]
-					s += struct.pack('B', len(tmp74))
-					s += tmp74
+					s += tmp91.encode('ISO-8859-1') if PY3 else tmp91
+				s += b'\x00' if self.details[tmp91] is None else b'\x01'
+				if self.details[tmp91] is not None:
+					tmp93 = b''
+					tmp93 += struct.pack('I', len(self.details[tmp91]))
+					while len(tmp93) and tmp93[-1] == b'\x00'[0]:
+						tmp93 = tmp93[:-1]
+					s += struct.pack('B', len(tmp93))
+					s += tmp93
 					
-					for tmp75 in self.details[tmp72]:
-						s += b'\x00' if tmp75 is None else b'\x01'
-						if tmp75 is not None:
-							tmp76 = b''
-							tmp76 += struct.pack('I', len(tmp75))
-							while len(tmp76) and tmp76[-1] == b'\x00'[0]:
-								tmp76 = tmp76[:-1]
-							s += struct.pack('B', len(tmp76))
-							s += tmp76
+					for tmp94 in self.details[tmp91]:
+						s += b'\x00' if tmp94 is None else b'\x01'
+						if tmp94 is not None:
+							tmp95 = b''
+							tmp95 += struct.pack('I', len(tmp94))
+							while len(tmp95) and tmp95[-1] == b'\x00'[0]:
+								tmp95 = tmp95[:-1]
+							s += struct.pack('B', len(tmp95))
+							s += tmp95
 							
-							s += tmp75.encode('ISO-8859-1') if PY3 else tmp75
-						s += b'\x00' if self.details[tmp72][tmp75] is None else b'\x01'
-						if self.details[tmp72][tmp75] is not None:
-							tmp77 = b''
-							tmp77 += struct.pack('I', len(self.details[tmp72][tmp75]))
-							while len(tmp77) and tmp77[-1] == b'\x00'[0]:
-								tmp77 = tmp77[:-1]
-							s += struct.pack('B', len(tmp77))
-							s += tmp77
+							s += tmp94.encode('ISO-8859-1') if PY3 else tmp94
+						s += b'\x00' if self.details[tmp91][tmp94] is None else b'\x01'
+						if self.details[tmp91][tmp94] is not None:
+							tmp96 = b''
+							tmp96 += struct.pack('I', len(self.details[tmp91][tmp94]))
+							while len(tmp96) and tmp96[-1] == b'\x00'[0]:
+								tmp96 = tmp96[:-1]
+							s += struct.pack('B', len(tmp96))
+							s += tmp96
 							
-							s += self.details[tmp72][tmp75].encode('ISO-8859-1') if PY3 else self.details[tmp72][tmp75]
+							s += self.details[tmp91][tmp94].encode('ISO-8859-1') if PY3 else self.details[tmp91][tmp94]
 		
 		return s
 	
 
 	def deserialize(self, s, offset=0):
 		# deserialize self.winner_sidename
-		tmp78 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp97 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp78:
-			tmp79 = struct.unpack('B', s[offset:offset + 1])[0]
+		if tmp97:
+			tmp98 = struct.unpack('B', s[offset:offset + 1])[0]
 			offset += 1
-			tmp80 = s[offset:offset + tmp79]
-			offset += tmp79
-			tmp80 += b'\x00' * (4 - tmp79)
-			tmp81 = struct.unpack('I', tmp80)[0]
+			tmp99 = s[offset:offset + tmp98]
+			offset += tmp98
+			tmp99 += b'\x00' * (4 - tmp98)
+			tmp100 = struct.unpack('I', tmp99)[0]
 			
-			self.winner_sidename = s[offset:offset + tmp81].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp81]
-			offset += tmp81
+			self.winner_sidename = s[offset:offset + tmp100].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp100]
+			offset += tmp100
 		else:
 			self.winner_sidename = None
 		
 		# deserialize self.details
-		tmp82 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp101 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp82:
-			tmp83 = struct.unpack('B', s[offset:offset + 1])[0]
+		if tmp101:
+			tmp102 = struct.unpack('B', s[offset:offset + 1])[0]
 			offset += 1
-			tmp84 = s[offset:offset + tmp83]
-			offset += tmp83
-			tmp84 += b'\x00' * (4 - tmp83)
-			tmp85 = struct.unpack('I', tmp84)[0]
+			tmp103 = s[offset:offset + tmp102]
+			offset += tmp102
+			tmp103 += b'\x00' * (4 - tmp102)
+			tmp104 = struct.unpack('I', tmp103)[0]
 			
 			self.details = {}
-			for tmp86 in range(tmp85):
-				tmp89 = struct.unpack('B', s[offset:offset + 1])[0]
+			for tmp105 in range(tmp104):
+				tmp108 = struct.unpack('B', s[offset:offset + 1])[0]
 				offset += 1
-				if tmp89:
-					tmp90 = struct.unpack('B', s[offset:offset + 1])[0]
+				if tmp108:
+					tmp109 = struct.unpack('B', s[offset:offset + 1])[0]
 					offset += 1
-					tmp91 = s[offset:offset + tmp90]
-					offset += tmp90
-					tmp91 += b'\x00' * (4 - tmp90)
-					tmp92 = struct.unpack('I', tmp91)[0]
+					tmp110 = s[offset:offset + tmp109]
+					offset += tmp109
+					tmp110 += b'\x00' * (4 - tmp109)
+					tmp111 = struct.unpack('I', tmp110)[0]
 					
-					tmp87 = s[offset:offset + tmp92].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp92]
-					offset += tmp92
+					tmp106 = s[offset:offset + tmp111].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp111]
+					offset += tmp111
 				else:
-					tmp87 = None
-				tmp93 = struct.unpack('B', s[offset:offset + 1])[0]
+					tmp106 = None
+				tmp112 = struct.unpack('B', s[offset:offset + 1])[0]
 				offset += 1
-				if tmp93:
-					tmp94 = struct.unpack('B', s[offset:offset + 1])[0]
+				if tmp112:
+					tmp113 = struct.unpack('B', s[offset:offset + 1])[0]
 					offset += 1
-					tmp95 = s[offset:offset + tmp94]
-					offset += tmp94
-					tmp95 += b'\x00' * (4 - tmp94)
-					tmp96 = struct.unpack('I', tmp95)[0]
+					tmp114 = s[offset:offset + tmp113]
+					offset += tmp113
+					tmp114 += b'\x00' * (4 - tmp113)
+					tmp115 = struct.unpack('I', tmp114)[0]
 					
-					tmp88 = {}
-					for tmp97 in range(tmp96):
-						tmp100 = struct.unpack('B', s[offset:offset + 1])[0]
+					tmp107 = {}
+					for tmp116 in range(tmp115):
+						tmp119 = struct.unpack('B', s[offset:offset + 1])[0]
 						offset += 1
-						if tmp100:
-							tmp101 = struct.unpack('B', s[offset:offset + 1])[0]
+						if tmp119:
+							tmp120 = struct.unpack('B', s[offset:offset + 1])[0]
 							offset += 1
-							tmp102 = s[offset:offset + tmp101]
-							offset += tmp101
-							tmp102 += b'\x00' * (4 - tmp101)
-							tmp103 = struct.unpack('I', tmp102)[0]
+							tmp121 = s[offset:offset + tmp120]
+							offset += tmp120
+							tmp121 += b'\x00' * (4 - tmp120)
+							tmp122 = struct.unpack('I', tmp121)[0]
 							
-							tmp98 = s[offset:offset + tmp103].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp103]
-							offset += tmp103
+							tmp117 = s[offset:offset + tmp122].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp122]
+							offset += tmp122
 						else:
-							tmp98 = None
-						tmp104 = struct.unpack('B', s[offset:offset + 1])[0]
+							tmp117 = None
+						tmp123 = struct.unpack('B', s[offset:offset + 1])[0]
 						offset += 1
-						if tmp104:
-							tmp105 = struct.unpack('B', s[offset:offset + 1])[0]
+						if tmp123:
+							tmp124 = struct.unpack('B', s[offset:offset + 1])[0]
 							offset += 1
-							tmp106 = s[offset:offset + tmp105]
-							offset += tmp105
-							tmp106 += b'\x00' * (4 - tmp105)
-							tmp107 = struct.unpack('I', tmp106)[0]
+							tmp125 = s[offset:offset + tmp124]
+							offset += tmp124
+							tmp125 += b'\x00' * (4 - tmp124)
+							tmp126 = struct.unpack('I', tmp125)[0]
 							
-							tmp99 = s[offset:offset + tmp107].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp107]
-							offset += tmp107
+							tmp118 = s[offset:offset + tmp126].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp126]
+							offset += tmp126
 						else:
-							tmp99 = None
-						tmp88[tmp98] = tmp99
+							tmp118 = None
+						tmp107[tmp117] = tmp118
 				else:
-					tmp88 = None
-				self.details[tmp87] = tmp88
+					tmp107 = None
+				self.details[tmp106] = tmp107
 		else:
 			self.details = None
 		
@@ -734,110 +812,110 @@ class SceneActions(object):
 		# serialize self.action_types
 		s += b'\x00' if self.action_types is None else b'\x01'
 		if self.action_types is not None:
-			tmp108 = b''
-			tmp108 += struct.pack('I', len(self.action_types))
-			while len(tmp108) and tmp108[-1] == b'\x00'[0]:
-				tmp108 = tmp108[:-1]
-			s += struct.pack('B', len(tmp108))
-			s += tmp108
+			tmp127 = b''
+			tmp127 += struct.pack('I', len(self.action_types))
+			while len(tmp127) and tmp127[-1] == b'\x00'[0]:
+				tmp127 = tmp127[:-1]
+			s += struct.pack('B', len(tmp127))
+			s += tmp127
 			
-			for tmp109 in self.action_types:
-				s += b'\x00' if tmp109 is None else b'\x01'
-				if tmp109 is not None:
-					tmp110 = b''
-					tmp110 += struct.pack('I', len(tmp109))
-					while len(tmp110) and tmp110[-1] == b'\x00'[0]:
-						tmp110 = tmp110[:-1]
-					s += struct.pack('B', len(tmp110))
-					s += tmp110
+			for tmp128 in self.action_types:
+				s += b'\x00' if tmp128 is None else b'\x01'
+				if tmp128 is not None:
+					tmp129 = b''
+					tmp129 += struct.pack('I', len(tmp128))
+					while len(tmp129) and tmp129[-1] == b'\x00'[0]:
+						tmp129 = tmp129[:-1]
+					s += struct.pack('B', len(tmp129))
+					s += tmp129
 					
-					s += tmp109.encode('ISO-8859-1') if PY3 else tmp109
+					s += tmp128.encode('ISO-8859-1') if PY3 else tmp128
 		
 		# serialize self.action_payloads
 		s += b'\x00' if self.action_payloads is None else b'\x01'
 		if self.action_payloads is not None:
-			tmp111 = b''
-			tmp111 += struct.pack('I', len(self.action_payloads))
-			while len(tmp111) and tmp111[-1] == b'\x00'[0]:
-				tmp111 = tmp111[:-1]
-			s += struct.pack('B', len(tmp111))
-			s += tmp111
+			tmp130 = b''
+			tmp130 += struct.pack('I', len(self.action_payloads))
+			while len(tmp130) and tmp130[-1] == b'\x00'[0]:
+				tmp130 = tmp130[:-1]
+			s += struct.pack('B', len(tmp130))
+			s += tmp130
 			
-			for tmp112 in self.action_payloads:
-				s += b'\x00' if tmp112 is None else b'\x01'
-				if tmp112 is not None:
-					tmp113 = b''
-					tmp113 += struct.pack('I', len(tmp112))
-					while len(tmp113) and tmp113[-1] == b'\x00'[0]:
-						tmp113 = tmp113[:-1]
-					s += struct.pack('B', len(tmp113))
-					s += tmp113
+			for tmp131 in self.action_payloads:
+				s += b'\x00' if tmp131 is None else b'\x01'
+				if tmp131 is not None:
+					tmp132 = b''
+					tmp132 += struct.pack('I', len(tmp131))
+					while len(tmp132) and tmp132[-1] == b'\x00'[0]:
+						tmp132 = tmp132[:-1]
+					s += struct.pack('B', len(tmp132))
+					s += tmp132
 					
-					s += tmp112.encode('ISO-8859-1') if PY3 else tmp112
+					s += tmp131.encode('ISO-8859-1') if PY3 else tmp131
 		
 		return s
 	
 
 	def deserialize(self, s, offset=0):
 		# deserialize self.action_types
-		tmp114 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp133 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp114:
-			tmp115 = struct.unpack('B', s[offset:offset + 1])[0]
+		if tmp133:
+			tmp134 = struct.unpack('B', s[offset:offset + 1])[0]
 			offset += 1
-			tmp116 = s[offset:offset + tmp115]
-			offset += tmp115
-			tmp116 += b'\x00' * (4 - tmp115)
-			tmp117 = struct.unpack('I', tmp116)[0]
+			tmp135 = s[offset:offset + tmp134]
+			offset += tmp134
+			tmp135 += b'\x00' * (4 - tmp134)
+			tmp136 = struct.unpack('I', tmp135)[0]
 			
 			self.action_types = []
-			for tmp118 in range(tmp117):
-				tmp120 = struct.unpack('B', s[offset:offset + 1])[0]
+			for tmp137 in range(tmp136):
+				tmp139 = struct.unpack('B', s[offset:offset + 1])[0]
 				offset += 1
-				if tmp120:
-					tmp121 = struct.unpack('B', s[offset:offset + 1])[0]
+				if tmp139:
+					tmp140 = struct.unpack('B', s[offset:offset + 1])[0]
 					offset += 1
-					tmp122 = s[offset:offset + tmp121]
-					offset += tmp121
-					tmp122 += b'\x00' * (4 - tmp121)
-					tmp123 = struct.unpack('I', tmp122)[0]
+					tmp141 = s[offset:offset + tmp140]
+					offset += tmp140
+					tmp141 += b'\x00' * (4 - tmp140)
+					tmp142 = struct.unpack('I', tmp141)[0]
 					
-					tmp119 = s[offset:offset + tmp123].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp123]
-					offset += tmp123
+					tmp138 = s[offset:offset + tmp142].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp142]
+					offset += tmp142
 				else:
-					tmp119 = None
-				self.action_types.append(tmp119)
+					tmp138 = None
+				self.action_types.append(tmp138)
 		else:
 			self.action_types = None
 		
 		# deserialize self.action_payloads
-		tmp124 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp143 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp124:
-			tmp125 = struct.unpack('B', s[offset:offset + 1])[0]
+		if tmp143:
+			tmp144 = struct.unpack('B', s[offset:offset + 1])[0]
 			offset += 1
-			tmp126 = s[offset:offset + tmp125]
-			offset += tmp125
-			tmp126 += b'\x00' * (4 - tmp125)
-			tmp127 = struct.unpack('I', tmp126)[0]
+			tmp145 = s[offset:offset + tmp144]
+			offset += tmp144
+			tmp145 += b'\x00' * (4 - tmp144)
+			tmp146 = struct.unpack('I', tmp145)[0]
 			
 			self.action_payloads = []
-			for tmp128 in range(tmp127):
-				tmp130 = struct.unpack('B', s[offset:offset + 1])[0]
+			for tmp147 in range(tmp146):
+				tmp149 = struct.unpack('B', s[offset:offset + 1])[0]
 				offset += 1
-				if tmp130:
-					tmp131 = struct.unpack('B', s[offset:offset + 1])[0]
+				if tmp149:
+					tmp150 = struct.unpack('B', s[offset:offset + 1])[0]
 					offset += 1
-					tmp132 = s[offset:offset + tmp131]
-					offset += tmp131
-					tmp132 += b'\x00' * (4 - tmp131)
-					tmp133 = struct.unpack('I', tmp132)[0]
+					tmp151 = s[offset:offset + tmp150]
+					offset += tmp150
+					tmp151 += b'\x00' * (4 - tmp150)
+					tmp152 = struct.unpack('I', tmp151)[0]
 					
-					tmp129 = s[offset:offset + tmp133].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp133]
-					offset += tmp133
+					tmp148 = s[offset:offset + tmp152].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp152]
+					offset += tmp152
 				else:
-					tmp129 = None
-				self.action_payloads.append(tmp129)
+					tmp148 = None
+				self.action_payloads.append(tmp148)
 		else:
 			self.action_payloads = None
 		

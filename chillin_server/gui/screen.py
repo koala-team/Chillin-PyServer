@@ -25,7 +25,8 @@ class Screen:
         return GameInfo(
             game_name = Config.config['general']['game_name'],
             sides = Config.config['sides'],
-            gui_cycle_duration = Config.config['gui']['cycle_duration']
+            gui_cycle_duration = Config.config['gui']['cycle_duration'],
+            gui_side_colors = Config.config['gui']['side_colors']
         )
 
 
