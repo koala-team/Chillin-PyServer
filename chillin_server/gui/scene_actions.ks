@@ -395,7 +395,7 @@ far_clip_plane = float
 ##########################################################
 
 [StoreBundleData]
-_def = class(BaseAction)
+_def = class
 bundle_name = string
 bundle_data = string
 
@@ -404,3 +404,9 @@ bundle_data = string
 
 [ClearScene]
 _def = class(BaseAction)
+
+##########################################################
+##########################################################
+
+[EndCycle]
+_def = class

@@ -2837,29 +2837,24 @@ class ChangeCamera(BaseAction):
 		return offset
 
 
-class StoreBundleData(BaseAction):
+class StoreBundleData(object):
 
 	@staticmethod
 	def name():
 		return 'StoreBundleData'
 
 
-	def __init__(self, cycle=None, ref=None, child_ref=None, duration_cycles=None, bundle_name=None, bundle_data=None):
-		self.initialize(cycle, ref, child_ref, duration_cycles, bundle_name, bundle_data)
+	def __init__(self, bundle_name=None, bundle_data=None):
+		self.initialize(bundle_name, bundle_data)
 	
 
-	def initialize(self, cycle=None, ref=None, child_ref=None, duration_cycles=None, bundle_name=None, bundle_data=None):
-		BaseAction.initialize(self, cycle, ref, child_ref, duration_cycles)
-		
+	def initialize(self, bundle_name=None, bundle_data=None):
 		self.bundle_name = bundle_name
 		self.bundle_data = bundle_data
 	
 
 	def serialize(self):
 		s = b''
-		
-		# serialize parents
-		s += BaseAction.serialize(self)
 		
 		# serialize self.bundle_name
 		s += b'\x00' if self.bundle_name is None else b'\x01'
@@ -2889,9 +2884,6 @@ class StoreBundleData(BaseAction):
 	
 
 	def deserialize(self, s, offset=0):
-		# deserialize parents
-		offset = BaseAction.deserialize(self, s, offset)
-		
 		# deserialize self.bundle_name
 		tmp174 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
@@ -2955,4 +2947,29 @@ class ClearScene(BaseAction):
 		# deserialize parents
 		offset = BaseAction.deserialize(self, s, offset)
 		
+		return offset
+
+
+class EndCycle(object):
+
+	@staticmethod
+	def name():
+		return 'EndCycle'
+
+
+	def __init__(self):
+		self.initialize()
+	
+
+	def initialize(self):
+		pass
+	
+
+	def serialize(self):
+		s = b''
+		
+		return s
+	
+
+	def deserialize(self, s, offset=0):
 		return offset
