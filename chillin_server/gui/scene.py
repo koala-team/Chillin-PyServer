@@ -5,40 +5,20 @@ from ..config import Config
 from .parser import Parser
 from .messages import SceneActions
 from .scene_actions import StoreBundleData
+from .reference_manager import ReferenceManager
 
 
 class Scene:
 
     def __init__(self, replay, send_queue):
-        self._send_queue = send_queue
+        self.rm = ReferenceManager()
         self._replay = replay
-
-        self._current_ref = 0
-        self._ref_table = {}
+        self._send_queue = send_queue
         self._reset_actions()
 
 
     def _reset_actions(self):
         self._actions = SceneActions([], [])
-
-
-    def _get_ref(self, ref):
-        ref_type = type(ref)
-        if ref_type == str:
-            return self._ref_table[ref]
-        if ref_type == int:
-            return ref
-        raise TypeError("an integer or string is required")
-
-
-    def _del_ref(self, ref):
-        ref_type = type(ref)
-        if ref_type == str:
-            del self._ref_table[ref]
-            return
-        if ref_type == int:
-            return
-        raise TypeError("an integer or string is required")
 
 
     def initialize(self):
