@@ -273,15 +273,9 @@ sibling_ref_as_base_index = string
 ##########################################################
 ##########################################################
 
-[EComponentType]
-_def = enum <byte>
-	{
-		ParticleSystemManager
-	}
-
-[ManageComponents]
+[ManageComponent]
 _def = class(BaseAction)
-type = EComponentType
+type = string
 add = boolean
 is_active = boolean
 
@@ -390,6 +384,8 @@ orthographic_size = float
 field_of_view = float
 near_clip_plane = float
 far_clip_plane = float
+min_boundary = Vector3
+max_boundary = Vector3
 
 ##########################################################
 ##########################################################
