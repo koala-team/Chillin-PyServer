@@ -11,10 +11,12 @@ from .reference_manager import ReferenceManager
 class Scene:
 
     def __init__(self, replay, send_queue):
-        self.rm = ReferenceManager()
         self._replay = replay
         self._send_queue = send_queue
         self._reset_actions()
+
+        self.rm = ReferenceManager()
+        self.rm.new('MainCamera')
 
 
     def _reset_actions(self):
