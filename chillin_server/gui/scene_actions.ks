@@ -384,8 +384,11 @@ orthographic_size = float
 field_of_view = float
 near_clip_plane = float
 far_clip_plane = float
-min_boundary = Vector3
-max_boundary = Vector3
+min_position = Vector3
+max_position = Vector3
+min_rotation = Vector2
+max_rotation = Vector2
+post_processing_profile_asset = Asset
 
 ##########################################################
 ##########################################################
@@ -406,3 +409,57 @@ _def = class(BaseAction)
 
 [EndCycle]
 _def = class
+
+##########################################################
+##########################################################
+
+[EAmbientMode]
+_def = enum <byte>
+	{
+		Skybox (0),
+		Trilight (1),
+		Flat (3),
+		Custom (4)
+	}
+
+[EDefaultReflectionMode]
+_def = enum <byte>
+	{
+		Skybox (0),
+		Custom (1)
+	}
+
+[EFogMode]
+_def = enum <byte>
+	{
+		Linear (1),
+		Exponential (2),
+		ExponentialSquared (3)
+	}
+
+[ChangeRenderSettings]
+_def = class
+ambient_equator_color = Vector4
+ambient_ground_color = Vector4
+ambient_intensity = float
+ambient_light = Vector4
+ambient_mode = EAmbientMode
+ambient_sky_color = Vector4
+custom_reflection_asset = Asset
+default_reflection_mode = EDefaultReflectionMode
+default_reflection_resolution = int
+flare_fade_speed = float
+flare_strength = float
+has_fog = boolean
+fog_mode = EFogMode
+fog_color = Vector4
+fog_density = float
+fog_start_distance = float
+fog_end_distance = float
+halo_strength = float
+reflection_bounces = int
+reflection_intensity = float
+skybox_asset = Asset
+subtractive_shadow_color = Vector4
+sun_ref = int
+sun_child_ref = string

@@ -2715,11 +2715,11 @@ class ChangeCamera(BaseAction):
 		return 'ChangeCamera'
 
 
-	def __init__(self, cycle=None, ref=None, child_ref=None, duration_cycles=None, clear_flag=None, background_color=None, is_orthographic=None, orthographic_size=None, field_of_view=None, near_clip_plane=None, far_clip_plane=None, min_boundary=None, max_boundary=None):
-		self.initialize(cycle, ref, child_ref, duration_cycles, clear_flag, background_color, is_orthographic, orthographic_size, field_of_view, near_clip_plane, far_clip_plane, min_boundary, max_boundary)
+	def __init__(self, cycle=None, ref=None, child_ref=None, duration_cycles=None, clear_flag=None, background_color=None, is_orthographic=None, orthographic_size=None, field_of_view=None, near_clip_plane=None, far_clip_plane=None, min_position=None, max_position=None, min_rotation=None, max_rotation=None, post_processing_profile_asset=None):
+		self.initialize(cycle, ref, child_ref, duration_cycles, clear_flag, background_color, is_orthographic, orthographic_size, field_of_view, near_clip_plane, far_clip_plane, min_position, max_position, min_rotation, max_rotation, post_processing_profile_asset)
 	
 
-	def initialize(self, cycle=None, ref=None, child_ref=None, duration_cycles=None, clear_flag=None, background_color=None, is_orthographic=None, orthographic_size=None, field_of_view=None, near_clip_plane=None, far_clip_plane=None, min_boundary=None, max_boundary=None):
+	def initialize(self, cycle=None, ref=None, child_ref=None, duration_cycles=None, clear_flag=None, background_color=None, is_orthographic=None, orthographic_size=None, field_of_view=None, near_clip_plane=None, far_clip_plane=None, min_position=None, max_position=None, min_rotation=None, max_rotation=None, post_processing_profile_asset=None):
 		BaseAction.initialize(self, cycle, ref, child_ref, duration_cycles)
 		
 		self.clear_flag = clear_flag
@@ -2729,8 +2729,11 @@ class ChangeCamera(BaseAction):
 		self.field_of_view = field_of_view
 		self.near_clip_plane = near_clip_plane
 		self.far_clip_plane = far_clip_plane
-		self.min_boundary = min_boundary
-		self.max_boundary = max_boundary
+		self.min_position = min_position
+		self.max_position = max_position
+		self.min_rotation = min_rotation
+		self.max_rotation = max_rotation
+		self.post_processing_profile_asset = post_processing_profile_asset
 	
 
 	def serialize(self):
@@ -2774,15 +2777,30 @@ class ChangeCamera(BaseAction):
 		if self.far_clip_plane is not None:
 			s += struct.pack('f', self.far_clip_plane)
 		
-		# serialize self.min_boundary
-		s += b'\x00' if self.min_boundary is None else b'\x01'
-		if self.min_boundary is not None:
-			s += self.min_boundary.serialize()
+		# serialize self.min_position
+		s += b'\x00' if self.min_position is None else b'\x01'
+		if self.min_position is not None:
+			s += self.min_position.serialize()
 		
-		# serialize self.max_boundary
-		s += b'\x00' if self.max_boundary is None else b'\x01'
-		if self.max_boundary is not None:
-			s += self.max_boundary.serialize()
+		# serialize self.max_position
+		s += b'\x00' if self.max_position is None else b'\x01'
+		if self.max_position is not None:
+			s += self.max_position.serialize()
+		
+		# serialize self.min_rotation
+		s += b'\x00' if self.min_rotation is None else b'\x01'
+		if self.min_rotation is not None:
+			s += self.min_rotation.serialize()
+		
+		# serialize self.max_rotation
+		s += b'\x00' if self.max_rotation is None else b'\x01'
+		if self.max_rotation is not None:
+			s += self.max_rotation.serialize()
+		
+		# serialize self.post_processing_profile_asset
+		s += b'\x00' if self.post_processing_profile_asset is None else b'\x01'
+		if self.post_processing_profile_asset is not None:
+			s += self.post_processing_profile_asset.serialize()
 		
 		return s
 	
@@ -2855,23 +2873,50 @@ class ChangeCamera(BaseAction):
 		else:
 			self.far_clip_plane = None
 		
-		# deserialize self.min_boundary
+		# deserialize self.min_position
 		tmp175 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
 		if tmp175:
-			self.min_boundary = Vector3()
-			offset = self.min_boundary.deserialize(s, offset)
+			self.min_position = Vector3()
+			offset = self.min_position.deserialize(s, offset)
 		else:
-			self.min_boundary = None
+			self.min_position = None
 		
-		# deserialize self.max_boundary
+		# deserialize self.max_position
 		tmp176 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
 		if tmp176:
-			self.max_boundary = Vector3()
-			offset = self.max_boundary.deserialize(s, offset)
+			self.max_position = Vector3()
+			offset = self.max_position.deserialize(s, offset)
 		else:
-			self.max_boundary = None
+			self.max_position = None
+		
+		# deserialize self.min_rotation
+		tmp177 = struct.unpack('B', s[offset:offset + 1])[0]
+		offset += 1
+		if tmp177:
+			self.min_rotation = Vector2()
+			offset = self.min_rotation.deserialize(s, offset)
+		else:
+			self.min_rotation = None
+		
+		# deserialize self.max_rotation
+		tmp178 = struct.unpack('B', s[offset:offset + 1])[0]
+		offset += 1
+		if tmp178:
+			self.max_rotation = Vector2()
+			offset = self.max_rotation.deserialize(s, offset)
+		else:
+			self.max_rotation = None
+		
+		# deserialize self.post_processing_profile_asset
+		tmp179 = struct.unpack('B', s[offset:offset + 1])[0]
+		offset += 1
+		if tmp179:
+			self.post_processing_profile_asset = Asset()
+			offset = self.post_processing_profile_asset.deserialize(s, offset)
+		else:
+			self.post_processing_profile_asset = None
 		
 		return offset
 
@@ -2898,24 +2943,24 @@ class StoreBundleData(object):
 		# serialize self.bundle_name
 		s += b'\x00' if self.bundle_name is None else b'\x01'
 		if self.bundle_name is not None:
-			tmp177 = b''
-			tmp177 += struct.pack('I', len(self.bundle_name))
-			while len(tmp177) and tmp177[-1] == b'\x00'[0]:
-				tmp177 = tmp177[:-1]
-			s += struct.pack('B', len(tmp177))
-			s += tmp177
+			tmp180 = b''
+			tmp180 += struct.pack('I', len(self.bundle_name))
+			while len(tmp180) and tmp180[-1] == b'\x00'[0]:
+				tmp180 = tmp180[:-1]
+			s += struct.pack('B', len(tmp180))
+			s += tmp180
 			
 			s += self.bundle_name.encode('ISO-8859-1') if PY3 else self.bundle_name
 		
 		# serialize self.bundle_data
 		s += b'\x00' if self.bundle_data is None else b'\x01'
 		if self.bundle_data is not None:
-			tmp178 = b''
-			tmp178 += struct.pack('I', len(self.bundle_data))
-			while len(tmp178) and tmp178[-1] == b'\x00'[0]:
-				tmp178 = tmp178[:-1]
-			s += struct.pack('B', len(tmp178))
-			s += tmp178
+			tmp181 = b''
+			tmp181 += struct.pack('I', len(self.bundle_data))
+			while len(tmp181) and tmp181[-1] == b'\x00'[0]:
+				tmp181 = tmp181[:-1]
+			s += struct.pack('B', len(tmp181))
+			s += tmp181
 			
 			s += self.bundle_data.encode('ISO-8859-1') if PY3 else self.bundle_data
 		
@@ -2924,34 +2969,34 @@ class StoreBundleData(object):
 
 	def deserialize(self, s, offset=0):
 		# deserialize self.bundle_name
-		tmp179 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp182 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp179:
-			tmp180 = struct.unpack('B', s[offset:offset + 1])[0]
+		if tmp182:
+			tmp183 = struct.unpack('B', s[offset:offset + 1])[0]
 			offset += 1
-			tmp181 = s[offset:offset + tmp180]
-			offset += tmp180
-			tmp181 += b'\x00' * (4 - tmp180)
-			tmp182 = struct.unpack('I', tmp181)[0]
+			tmp184 = s[offset:offset + tmp183]
+			offset += tmp183
+			tmp184 += b'\x00' * (4 - tmp183)
+			tmp185 = struct.unpack('I', tmp184)[0]
 			
-			self.bundle_name = s[offset:offset + tmp182].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp182]
-			offset += tmp182
+			self.bundle_name = s[offset:offset + tmp185].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp185]
+			offset += tmp185
 		else:
 			self.bundle_name = None
 		
 		# deserialize self.bundle_data
-		tmp183 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp186 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp183:
-			tmp184 = struct.unpack('B', s[offset:offset + 1])[0]
+		if tmp186:
+			tmp187 = struct.unpack('B', s[offset:offset + 1])[0]
 			offset += 1
-			tmp185 = s[offset:offset + tmp184]
-			offset += tmp184
-			tmp185 += b'\x00' * (4 - tmp184)
-			tmp186 = struct.unpack('I', tmp185)[0]
+			tmp188 = s[offset:offset + tmp187]
+			offset += tmp187
+			tmp188 += b'\x00' * (4 - tmp187)
+			tmp189 = struct.unpack('I', tmp188)[0]
 			
-			self.bundle_data = s[offset:offset + tmp186].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp186]
-			offset += tmp186
+			self.bundle_data = s[offset:offset + tmp189].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp189]
+			offset += tmp189
 		else:
 			self.bundle_data = None
 		
@@ -3011,4 +3056,423 @@ class EndCycle(object):
 	
 
 	def deserialize(self, s, offset=0):
+		return offset
+
+
+class EAmbientMode(Enum):
+	Skybox = 0
+	Trilight = 1
+	Flat = 3
+	Custom = 4
+
+
+class EDefaultReflectionMode(Enum):
+	Skybox = 0
+	Custom = 1
+
+
+class EFogMode(Enum):
+	Linear = 1
+	Exponential = 2
+	ExponentialSquared = 3
+
+
+class ChangeRenderSettings(object):
+
+	@staticmethod
+	def name():
+		return 'ChangeRenderSettings'
+
+
+	def __init__(self, ambient_equator_color=None, ambient_ground_color=None, ambient_intensity=None, ambient_light=None, ambient_mode=None, ambient_sky_color=None, custom_reflection_asset=None, default_reflection_mode=None, default_reflection_resolution=None, flare_fade_speed=None, flare_strength=None, has_fog=None, fog_mode=None, fog_color=None, fog_density=None, fog_start_distance=None, fog_end_distance=None, halo_strength=None, reflection_bounces=None, reflection_intensity=None, skybox_asset=None, subtractive_shadow_color=None, sun_ref=None, sun_child_ref=None):
+		self.initialize(ambient_equator_color, ambient_ground_color, ambient_intensity, ambient_light, ambient_mode, ambient_sky_color, custom_reflection_asset, default_reflection_mode, default_reflection_resolution, flare_fade_speed, flare_strength, has_fog, fog_mode, fog_color, fog_density, fog_start_distance, fog_end_distance, halo_strength, reflection_bounces, reflection_intensity, skybox_asset, subtractive_shadow_color, sun_ref, sun_child_ref)
+	
+
+	def initialize(self, ambient_equator_color=None, ambient_ground_color=None, ambient_intensity=None, ambient_light=None, ambient_mode=None, ambient_sky_color=None, custom_reflection_asset=None, default_reflection_mode=None, default_reflection_resolution=None, flare_fade_speed=None, flare_strength=None, has_fog=None, fog_mode=None, fog_color=None, fog_density=None, fog_start_distance=None, fog_end_distance=None, halo_strength=None, reflection_bounces=None, reflection_intensity=None, skybox_asset=None, subtractive_shadow_color=None, sun_ref=None, sun_child_ref=None):
+		self.ambient_equator_color = ambient_equator_color
+		self.ambient_ground_color = ambient_ground_color
+		self.ambient_intensity = ambient_intensity
+		self.ambient_light = ambient_light
+		self.ambient_mode = ambient_mode
+		self.ambient_sky_color = ambient_sky_color
+		self.custom_reflection_asset = custom_reflection_asset
+		self.default_reflection_mode = default_reflection_mode
+		self.default_reflection_resolution = default_reflection_resolution
+		self.flare_fade_speed = flare_fade_speed
+		self.flare_strength = flare_strength
+		self.has_fog = has_fog
+		self.fog_mode = fog_mode
+		self.fog_color = fog_color
+		self.fog_density = fog_density
+		self.fog_start_distance = fog_start_distance
+		self.fog_end_distance = fog_end_distance
+		self.halo_strength = halo_strength
+		self.reflection_bounces = reflection_bounces
+		self.reflection_intensity = reflection_intensity
+		self.skybox_asset = skybox_asset
+		self.subtractive_shadow_color = subtractive_shadow_color
+		self.sun_ref = sun_ref
+		self.sun_child_ref = sun_child_ref
+	
+
+	def serialize(self):
+		s = b''
+		
+		# serialize self.ambient_equator_color
+		s += b'\x00' if self.ambient_equator_color is None else b'\x01'
+		if self.ambient_equator_color is not None:
+			s += self.ambient_equator_color.serialize()
+		
+		# serialize self.ambient_ground_color
+		s += b'\x00' if self.ambient_ground_color is None else b'\x01'
+		if self.ambient_ground_color is not None:
+			s += self.ambient_ground_color.serialize()
+		
+		# serialize self.ambient_intensity
+		s += b'\x00' if self.ambient_intensity is None else b'\x01'
+		if self.ambient_intensity is not None:
+			s += struct.pack('f', self.ambient_intensity)
+		
+		# serialize self.ambient_light
+		s += b'\x00' if self.ambient_light is None else b'\x01'
+		if self.ambient_light is not None:
+			s += self.ambient_light.serialize()
+		
+		# serialize self.ambient_mode
+		s += b'\x00' if self.ambient_mode is None else b'\x01'
+		if self.ambient_mode is not None:
+			s += struct.pack('b', self.ambient_mode.value)
+		
+		# serialize self.ambient_sky_color
+		s += b'\x00' if self.ambient_sky_color is None else b'\x01'
+		if self.ambient_sky_color is not None:
+			s += self.ambient_sky_color.serialize()
+		
+		# serialize self.custom_reflection_asset
+		s += b'\x00' if self.custom_reflection_asset is None else b'\x01'
+		if self.custom_reflection_asset is not None:
+			s += self.custom_reflection_asset.serialize()
+		
+		# serialize self.default_reflection_mode
+		s += b'\x00' if self.default_reflection_mode is None else b'\x01'
+		if self.default_reflection_mode is not None:
+			s += struct.pack('b', self.default_reflection_mode.value)
+		
+		# serialize self.default_reflection_resolution
+		s += b'\x00' if self.default_reflection_resolution is None else b'\x01'
+		if self.default_reflection_resolution is not None:
+			s += struct.pack('i', self.default_reflection_resolution)
+		
+		# serialize self.flare_fade_speed
+		s += b'\x00' if self.flare_fade_speed is None else b'\x01'
+		if self.flare_fade_speed is not None:
+			s += struct.pack('f', self.flare_fade_speed)
+		
+		# serialize self.flare_strength
+		s += b'\x00' if self.flare_strength is None else b'\x01'
+		if self.flare_strength is not None:
+			s += struct.pack('f', self.flare_strength)
+		
+		# serialize self.has_fog
+		s += b'\x00' if self.has_fog is None else b'\x01'
+		if self.has_fog is not None:
+			s += struct.pack('?', self.has_fog)
+		
+		# serialize self.fog_mode
+		s += b'\x00' if self.fog_mode is None else b'\x01'
+		if self.fog_mode is not None:
+			s += struct.pack('b', self.fog_mode.value)
+		
+		# serialize self.fog_color
+		s += b'\x00' if self.fog_color is None else b'\x01'
+		if self.fog_color is not None:
+			s += self.fog_color.serialize()
+		
+		# serialize self.fog_density
+		s += b'\x00' if self.fog_density is None else b'\x01'
+		if self.fog_density is not None:
+			s += struct.pack('f', self.fog_density)
+		
+		# serialize self.fog_start_distance
+		s += b'\x00' if self.fog_start_distance is None else b'\x01'
+		if self.fog_start_distance is not None:
+			s += struct.pack('f', self.fog_start_distance)
+		
+		# serialize self.fog_end_distance
+		s += b'\x00' if self.fog_end_distance is None else b'\x01'
+		if self.fog_end_distance is not None:
+			s += struct.pack('f', self.fog_end_distance)
+		
+		# serialize self.halo_strength
+		s += b'\x00' if self.halo_strength is None else b'\x01'
+		if self.halo_strength is not None:
+			s += struct.pack('f', self.halo_strength)
+		
+		# serialize self.reflection_bounces
+		s += b'\x00' if self.reflection_bounces is None else b'\x01'
+		if self.reflection_bounces is not None:
+			s += struct.pack('i', self.reflection_bounces)
+		
+		# serialize self.reflection_intensity
+		s += b'\x00' if self.reflection_intensity is None else b'\x01'
+		if self.reflection_intensity is not None:
+			s += struct.pack('f', self.reflection_intensity)
+		
+		# serialize self.skybox_asset
+		s += b'\x00' if self.skybox_asset is None else b'\x01'
+		if self.skybox_asset is not None:
+			s += self.skybox_asset.serialize()
+		
+		# serialize self.subtractive_shadow_color
+		s += b'\x00' if self.subtractive_shadow_color is None else b'\x01'
+		if self.subtractive_shadow_color is not None:
+			s += self.subtractive_shadow_color.serialize()
+		
+		# serialize self.sun_ref
+		s += b'\x00' if self.sun_ref is None else b'\x01'
+		if self.sun_ref is not None:
+			s += struct.pack('i', self.sun_ref)
+		
+		# serialize self.sun_child_ref
+		s += b'\x00' if self.sun_child_ref is None else b'\x01'
+		if self.sun_child_ref is not None:
+			tmp190 = b''
+			tmp190 += struct.pack('I', len(self.sun_child_ref))
+			while len(tmp190) and tmp190[-1] == b'\x00'[0]:
+				tmp190 = tmp190[:-1]
+			s += struct.pack('B', len(tmp190))
+			s += tmp190
+			
+			s += self.sun_child_ref.encode('ISO-8859-1') if PY3 else self.sun_child_ref
+		
+		return s
+	
+
+	def deserialize(self, s, offset=0):
+		# deserialize self.ambient_equator_color
+		tmp191 = struct.unpack('B', s[offset:offset + 1])[0]
+		offset += 1
+		if tmp191:
+			self.ambient_equator_color = Vector4()
+			offset = self.ambient_equator_color.deserialize(s, offset)
+		else:
+			self.ambient_equator_color = None
+		
+		# deserialize self.ambient_ground_color
+		tmp192 = struct.unpack('B', s[offset:offset + 1])[0]
+		offset += 1
+		if tmp192:
+			self.ambient_ground_color = Vector4()
+			offset = self.ambient_ground_color.deserialize(s, offset)
+		else:
+			self.ambient_ground_color = None
+		
+		# deserialize self.ambient_intensity
+		tmp193 = struct.unpack('B', s[offset:offset + 1])[0]
+		offset += 1
+		if tmp193:
+			self.ambient_intensity = struct.unpack('f', s[offset:offset + 4])[0]
+			offset += 4
+		else:
+			self.ambient_intensity = None
+		
+		# deserialize self.ambient_light
+		tmp194 = struct.unpack('B', s[offset:offset + 1])[0]
+		offset += 1
+		if tmp194:
+			self.ambient_light = Vector4()
+			offset = self.ambient_light.deserialize(s, offset)
+		else:
+			self.ambient_light = None
+		
+		# deserialize self.ambient_mode
+		tmp195 = struct.unpack('B', s[offset:offset + 1])[0]
+		offset += 1
+		if tmp195:
+			tmp196 = struct.unpack('b', s[offset:offset + 1])[0]
+			offset += 1
+			self.ambient_mode = EAmbientMode(tmp196)
+		else:
+			self.ambient_mode = None
+		
+		# deserialize self.ambient_sky_color
+		tmp197 = struct.unpack('B', s[offset:offset + 1])[0]
+		offset += 1
+		if tmp197:
+			self.ambient_sky_color = Vector4()
+			offset = self.ambient_sky_color.deserialize(s, offset)
+		else:
+			self.ambient_sky_color = None
+		
+		# deserialize self.custom_reflection_asset
+		tmp198 = struct.unpack('B', s[offset:offset + 1])[0]
+		offset += 1
+		if tmp198:
+			self.custom_reflection_asset = Asset()
+			offset = self.custom_reflection_asset.deserialize(s, offset)
+		else:
+			self.custom_reflection_asset = None
+		
+		# deserialize self.default_reflection_mode
+		tmp199 = struct.unpack('B', s[offset:offset + 1])[0]
+		offset += 1
+		if tmp199:
+			tmp200 = struct.unpack('b', s[offset:offset + 1])[0]
+			offset += 1
+			self.default_reflection_mode = EDefaultReflectionMode(tmp200)
+		else:
+			self.default_reflection_mode = None
+		
+		# deserialize self.default_reflection_resolution
+		tmp201 = struct.unpack('B', s[offset:offset + 1])[0]
+		offset += 1
+		if tmp201:
+			self.default_reflection_resolution = struct.unpack('i', s[offset:offset + 4])[0]
+			offset += 4
+		else:
+			self.default_reflection_resolution = None
+		
+		# deserialize self.flare_fade_speed
+		tmp202 = struct.unpack('B', s[offset:offset + 1])[0]
+		offset += 1
+		if tmp202:
+			self.flare_fade_speed = struct.unpack('f', s[offset:offset + 4])[0]
+			offset += 4
+		else:
+			self.flare_fade_speed = None
+		
+		# deserialize self.flare_strength
+		tmp203 = struct.unpack('B', s[offset:offset + 1])[0]
+		offset += 1
+		if tmp203:
+			self.flare_strength = struct.unpack('f', s[offset:offset + 4])[0]
+			offset += 4
+		else:
+			self.flare_strength = None
+		
+		# deserialize self.has_fog
+		tmp204 = struct.unpack('B', s[offset:offset + 1])[0]
+		offset += 1
+		if tmp204:
+			self.has_fog = struct.unpack('?', s[offset:offset + 1])[0]
+			offset += 1
+		else:
+			self.has_fog = None
+		
+		# deserialize self.fog_mode
+		tmp205 = struct.unpack('B', s[offset:offset + 1])[0]
+		offset += 1
+		if tmp205:
+			tmp206 = struct.unpack('b', s[offset:offset + 1])[0]
+			offset += 1
+			self.fog_mode = EFogMode(tmp206)
+		else:
+			self.fog_mode = None
+		
+		# deserialize self.fog_color
+		tmp207 = struct.unpack('B', s[offset:offset + 1])[0]
+		offset += 1
+		if tmp207:
+			self.fog_color = Vector4()
+			offset = self.fog_color.deserialize(s, offset)
+		else:
+			self.fog_color = None
+		
+		# deserialize self.fog_density
+		tmp208 = struct.unpack('B', s[offset:offset + 1])[0]
+		offset += 1
+		if tmp208:
+			self.fog_density = struct.unpack('f', s[offset:offset + 4])[0]
+			offset += 4
+		else:
+			self.fog_density = None
+		
+		# deserialize self.fog_start_distance
+		tmp209 = struct.unpack('B', s[offset:offset + 1])[0]
+		offset += 1
+		if tmp209:
+			self.fog_start_distance = struct.unpack('f', s[offset:offset + 4])[0]
+			offset += 4
+		else:
+			self.fog_start_distance = None
+		
+		# deserialize self.fog_end_distance
+		tmp210 = struct.unpack('B', s[offset:offset + 1])[0]
+		offset += 1
+		if tmp210:
+			self.fog_end_distance = struct.unpack('f', s[offset:offset + 4])[0]
+			offset += 4
+		else:
+			self.fog_end_distance = None
+		
+		# deserialize self.halo_strength
+		tmp211 = struct.unpack('B', s[offset:offset + 1])[0]
+		offset += 1
+		if tmp211:
+			self.halo_strength = struct.unpack('f', s[offset:offset + 4])[0]
+			offset += 4
+		else:
+			self.halo_strength = None
+		
+		# deserialize self.reflection_bounces
+		tmp212 = struct.unpack('B', s[offset:offset + 1])[0]
+		offset += 1
+		if tmp212:
+			self.reflection_bounces = struct.unpack('i', s[offset:offset + 4])[0]
+			offset += 4
+		else:
+			self.reflection_bounces = None
+		
+		# deserialize self.reflection_intensity
+		tmp213 = struct.unpack('B', s[offset:offset + 1])[0]
+		offset += 1
+		if tmp213:
+			self.reflection_intensity = struct.unpack('f', s[offset:offset + 4])[0]
+			offset += 4
+		else:
+			self.reflection_intensity = None
+		
+		# deserialize self.skybox_asset
+		tmp214 = struct.unpack('B', s[offset:offset + 1])[0]
+		offset += 1
+		if tmp214:
+			self.skybox_asset = Asset()
+			offset = self.skybox_asset.deserialize(s, offset)
+		else:
+			self.skybox_asset = None
+		
+		# deserialize self.subtractive_shadow_color
+		tmp215 = struct.unpack('B', s[offset:offset + 1])[0]
+		offset += 1
+		if tmp215:
+			self.subtractive_shadow_color = Vector4()
+			offset = self.subtractive_shadow_color.deserialize(s, offset)
+		else:
+			self.subtractive_shadow_color = None
+		
+		# deserialize self.sun_ref
+		tmp216 = struct.unpack('B', s[offset:offset + 1])[0]
+		offset += 1
+		if tmp216:
+			self.sun_ref = struct.unpack('i', s[offset:offset + 4])[0]
+			offset += 4
+		else:
+			self.sun_ref = None
+		
+		# deserialize self.sun_child_ref
+		tmp217 = struct.unpack('B', s[offset:offset + 1])[0]
+		offset += 1
+		if tmp217:
+			tmp218 = struct.unpack('B', s[offset:offset + 1])[0]
+			offset += 1
+			tmp219 = s[offset:offset + tmp218]
+			offset += tmp218
+			tmp219 += b'\x00' * (4 - tmp218)
+			tmp220 = struct.unpack('I', tmp219)[0]
+			
+			self.sun_child_ref = s[offset:offset + tmp220].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp220]
+			offset += tmp220
+		else:
+			self.sun_child_ref = None
+		
 		return offset
