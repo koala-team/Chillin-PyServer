@@ -320,13 +320,14 @@ class Asset(object):
 		return 'Asset'
 
 
-	def __init__(self, bundle_name=None, asset_name=None):
-		self.initialize(bundle_name, asset_name)
+	def __init__(self, bundle_name=None, asset_name=None, index=None):
+		self.initialize(bundle_name, asset_name, index)
 	
 
-	def initialize(self, bundle_name=None, asset_name=None):
+	def initialize(self, bundle_name=None, asset_name=None, index=None):
 		self.bundle_name = bundle_name
 		self.asset_name = asset_name
+		self.index = index
 	
 
 	def serialize(self):
@@ -355,6 +356,11 @@ class Asset(object):
 			s += tmp18
 			
 			s += self.asset_name.encode('ISO-8859-1') if PY3 else self.asset_name
+		
+		# serialize self.index
+		s += b'\x00' if self.index is None else b'\x01'
+		if self.index is not None:
+			s += struct.pack('i', self.index)
 		
 		return s
 	
@@ -392,6 +398,15 @@ class Asset(object):
 		else:
 			self.asset_name = None
 		
+		# deserialize self.index
+		tmp27 = struct.unpack('B', s[offset:offset + 1])[0]
+		offset += 1
+		if tmp27:
+			self.index = struct.unpack('i', s[offset:offset + 4])[0]
+			offset += 4
+		else:
+			self.index = None
+		
 		return offset
 
 
@@ -427,12 +442,12 @@ class BaseCreation(BaseAction):
 		# serialize self.parent_child_ref
 		s += b'\x00' if self.parent_child_ref is None else b'\x01'
 		if self.parent_child_ref is not None:
-			tmp27 = b''
-			tmp27 += struct.pack('I', len(self.parent_child_ref))
-			while len(tmp27) and tmp27[-1] == b'\x00'[0]:
-				tmp27 = tmp27[:-1]
-			s += struct.pack('B', len(tmp27))
-			s += tmp27
+			tmp28 = b''
+			tmp28 += struct.pack('I', len(self.parent_child_ref))
+			while len(tmp28) and tmp28[-1] == b'\x00'[0]:
+				tmp28 = tmp28[:-1]
+			s += struct.pack('B', len(tmp28))
+			s += tmp28
 			
 			s += self.parent_child_ref.encode('ISO-8859-1') if PY3 else self.parent_child_ref
 		
@@ -444,27 +459,27 @@ class BaseCreation(BaseAction):
 		offset = BaseAction.deserialize(self, s, offset)
 		
 		# deserialize self.parent_ref
-		tmp28 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp29 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp28:
+		if tmp29:
 			self.parent_ref = struct.unpack('i', s[offset:offset + 4])[0]
 			offset += 4
 		else:
 			self.parent_ref = None
 		
 		# deserialize self.parent_child_ref
-		tmp29 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp30 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp29:
-			tmp30 = struct.unpack('B', s[offset:offset + 1])[0]
+		if tmp30:
+			tmp31 = struct.unpack('B', s[offset:offset + 1])[0]
 			offset += 1
-			tmp31 = s[offset:offset + tmp30]
-			offset += tmp30
-			tmp31 += b'\x00' * (4 - tmp30)
-			tmp32 = struct.unpack('I', tmp31)[0]
+			tmp32 = s[offset:offset + tmp31]
+			offset += tmp31
+			tmp32 += b'\x00' * (4 - tmp31)
+			tmp33 = struct.unpack('I', tmp32)[0]
 			
-			self.parent_child_ref = s[offset:offset + tmp32].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp32]
-			offset += tmp32
+			self.parent_child_ref = s[offset:offset + tmp33].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp33]
+			offset += tmp33
 		else:
 			self.parent_child_ref = None
 		
@@ -502,6 +517,11 @@ class CreateEmptyGameObject(BaseCreation):
 		return offset
 
 
+class EDefaultParent(Enum):
+	RootObject = 0
+	RootCanvas = 1
+
+
 class InstantiateBundleAsset(BaseCreation):
 
 	@staticmethod
@@ -509,14 +529,15 @@ class InstantiateBundleAsset(BaseCreation):
 		return 'InstantiateBundleAsset'
 
 
-	def __init__(self, cycle=None, ref=None, child_ref=None, duration_cycles=None, parent_ref=None, parent_child_ref=None, asset=None):
-		self.initialize(cycle, ref, child_ref, duration_cycles, parent_ref, parent_child_ref, asset)
+	def __init__(self, cycle=None, ref=None, child_ref=None, duration_cycles=None, parent_ref=None, parent_child_ref=None, asset=None, default_parent=None):
+		self.initialize(cycle, ref, child_ref, duration_cycles, parent_ref, parent_child_ref, asset, default_parent)
 	
 
-	def initialize(self, cycle=None, ref=None, child_ref=None, duration_cycles=None, parent_ref=None, parent_child_ref=None, asset=None):
+	def initialize(self, cycle=None, ref=None, child_ref=None, duration_cycles=None, parent_ref=None, parent_child_ref=None, asset=None, default_parent=None):
 		BaseCreation.initialize(self, cycle, ref, child_ref, duration_cycles, parent_ref, parent_child_ref)
 		
 		self.asset = asset
+		self.default_parent = default_parent
 	
 
 	def serialize(self):
@@ -530,6 +551,11 @@ class InstantiateBundleAsset(BaseCreation):
 		if self.asset is not None:
 			s += self.asset.serialize()
 		
+		# serialize self.default_parent
+		s += b'\x00' if self.default_parent is None else b'\x01'
+		if self.default_parent is not None:
+			s += struct.pack('b', self.default_parent.value)
+		
 		return s
 	
 
@@ -538,13 +564,23 @@ class InstantiateBundleAsset(BaseCreation):
 		offset = BaseCreation.deserialize(self, s, offset)
 		
 		# deserialize self.asset
-		tmp33 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp34 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp33:
+		if tmp34:
 			self.asset = Asset()
 			offset = self.asset.deserialize(s, offset)
 		else:
 			self.asset = None
+		
+		# deserialize self.default_parent
+		tmp35 = struct.unpack('B', s[offset:offset + 1])[0]
+		offset += 1
+		if tmp35:
+			tmp36 = struct.unpack('b', s[offset:offset + 1])[0]
+			offset += 1
+			self.default_parent = EDefaultParent(tmp36)
+		else:
+			self.default_parent = None
 		
 		return offset
 
@@ -594,12 +630,12 @@ class CreateBasicObject(BaseCreation):
 		offset = BaseCreation.deserialize(self, s, offset)
 		
 		# deserialize self.type
-		tmp34 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp37 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp34:
-			tmp35 = struct.unpack('b', s[offset:offset + 1])[0]
+		if tmp37:
+			tmp38 = struct.unpack('b', s[offset:offset + 1])[0]
 			offset += 1
-			self.type = EBasicObjectType(tmp35)
+			self.type = EBasicObjectType(tmp38)
 		else:
 			self.type = None
 		
@@ -610,8 +646,9 @@ class EUIElementType(Enum):
 	Canvas = 0
 	Text = 1
 	Slider = 2
-	RawImage = 3
-	Panel = 4
+	Image = 3
+	RawImage = 4
+	Panel = 5
 
 
 class CreateUIElement(BaseCreation):
@@ -650,12 +687,12 @@ class CreateUIElement(BaseCreation):
 		offset = BaseCreation.deserialize(self, s, offset)
 		
 		# deserialize self.type
-		tmp36 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp39 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp36:
-			tmp37 = struct.unpack('b', s[offset:offset + 1])[0]
+		if tmp39:
+			tmp40 = struct.unpack('b', s[offset:offset + 1])[0]
 			offset += 1
-			self.type = EUIElementType(tmp37)
+			self.type = EUIElementType(tmp40)
 		else:
 			self.type = None
 		
@@ -689,6 +726,53 @@ class Destroy(BaseAction):
 	def deserialize(self, s, offset=0):
 		# deserialize parents
 		offset = BaseAction.deserialize(self, s, offset)
+		
+		return offset
+
+
+class ChangeIsActive(BaseAction):
+
+	@staticmethod
+	def name():
+		return 'ChangeIsActive'
+
+
+	def __init__(self, cycle=None, ref=None, child_ref=None, duration_cycles=None, is_active=None):
+		self.initialize(cycle, ref, child_ref, duration_cycles, is_active)
+	
+
+	def initialize(self, cycle=None, ref=None, child_ref=None, duration_cycles=None, is_active=None):
+		BaseAction.initialize(self, cycle, ref, child_ref, duration_cycles)
+		
+		self.is_active = is_active
+	
+
+	def serialize(self):
+		s = b''
+		
+		# serialize parents
+		s += BaseAction.serialize(self)
+		
+		# serialize self.is_active
+		s += b'\x00' if self.is_active is None else b'\x01'
+		if self.is_active is not None:
+			s += struct.pack('?', self.is_active)
+		
+		return s
+	
+
+	def deserialize(self, s, offset=0):
+		# deserialize parents
+		offset = BaseAction.deserialize(self, s, offset)
+		
+		# deserialize self.is_active
+		tmp41 = struct.unpack('B', s[offset:offset + 1])[0]
+		offset += 1
+		if tmp41:
+			self.is_active = struct.unpack('?', s[offset:offset + 1])[0]
+			offset += 1
+		else:
+			self.is_active = None
 		
 		return offset
 
@@ -729,9 +813,9 @@ class ChangeVisibility(BaseAction):
 		offset = BaseAction.deserialize(self, s, offset)
 		
 		# deserialize self.is_visible
-		tmp38 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp42 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp38:
+		if tmp42:
 			self.is_visible = struct.unpack('?', s[offset:offset + 1])[0]
 			offset += 1
 		else:
@@ -747,16 +831,17 @@ class ChangeTransform(BaseAction):
 		return 'ChangeTransform'
 
 
-	def __init__(self, cycle=None, ref=None, child_ref=None, duration_cycles=None, position=None, rotation=None, scale=None):
-		self.initialize(cycle, ref, child_ref, duration_cycles, position, rotation, scale)
+	def __init__(self, cycle=None, ref=None, child_ref=None, duration_cycles=None, position=None, rotation=None, scale=None, change_local=None):
+		self.initialize(cycle, ref, child_ref, duration_cycles, position, rotation, scale, change_local)
 	
 
-	def initialize(self, cycle=None, ref=None, child_ref=None, duration_cycles=None, position=None, rotation=None, scale=None):
+	def initialize(self, cycle=None, ref=None, child_ref=None, duration_cycles=None, position=None, rotation=None, scale=None, change_local=None):
 		BaseAction.initialize(self, cycle, ref, child_ref, duration_cycles)
 		
 		self.position = position
 		self.rotation = rotation
 		self.scale = scale
+		self.change_local = change_local
 	
 
 	def serialize(self):
@@ -780,6 +865,11 @@ class ChangeTransform(BaseAction):
 		if self.scale is not None:
 			s += self.scale.serialize()
 		
+		# serialize self.change_local
+		s += b'\x00' if self.change_local is None else b'\x01'
+		if self.change_local is not None:
+			s += struct.pack('?', self.change_local)
+		
 		return s
 	
 
@@ -788,31 +878,40 @@ class ChangeTransform(BaseAction):
 		offset = BaseAction.deserialize(self, s, offset)
 		
 		# deserialize self.position
-		tmp39 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp43 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp39:
+		if tmp43:
 			self.position = Vector3()
 			offset = self.position.deserialize(s, offset)
 		else:
 			self.position = None
 		
 		# deserialize self.rotation
-		tmp40 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp44 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp40:
+		if tmp44:
 			self.rotation = Vector3()
 			offset = self.rotation.deserialize(s, offset)
 		else:
 			self.rotation = None
 		
 		# deserialize self.scale
-		tmp41 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp45 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp41:
+		if tmp45:
 			self.scale = Vector3()
 			offset = self.scale.deserialize(s, offset)
 		else:
 			self.scale = None
+		
+		# deserialize self.change_local
+		tmp46 = struct.unpack('B', s[offset:offset + 1])[0]
+		offset += 1
+		if tmp46:
+			self.change_local = struct.unpack('?', s[offset:offset + 1])[0]
+			offset += 1
+		else:
+			self.change_local = None
 		
 		return offset
 
@@ -854,12 +953,12 @@ class ChangeAnimatorVariable(BaseAction):
 		# serialize self.var_name
 		s += b'\x00' if self.var_name is None else b'\x01'
 		if self.var_name is not None:
-			tmp42 = b''
-			tmp42 += struct.pack('I', len(self.var_name))
-			while len(tmp42) and tmp42[-1] == b'\x00'[0]:
-				tmp42 = tmp42[:-1]
-			s += struct.pack('B', len(tmp42))
-			s += tmp42
+			tmp47 = b''
+			tmp47 += struct.pack('I', len(self.var_name))
+			while len(tmp47) and tmp47[-1] == b'\x00'[0]:
+				tmp47 = tmp47[:-1]
+			s += struct.pack('B', len(tmp47))
+			s += tmp47
 			
 			s += self.var_name.encode('ISO-8859-1') if PY3 else self.var_name
 		
@@ -891,53 +990,53 @@ class ChangeAnimatorVariable(BaseAction):
 		offset = BaseAction.deserialize(self, s, offset)
 		
 		# deserialize self.var_name
-		tmp43 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp48 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp43:
-			tmp44 = struct.unpack('B', s[offset:offset + 1])[0]
+		if tmp48:
+			tmp49 = struct.unpack('B', s[offset:offset + 1])[0]
 			offset += 1
-			tmp45 = s[offset:offset + tmp44]
-			offset += tmp44
-			tmp45 += b'\x00' * (4 - tmp44)
-			tmp46 = struct.unpack('I', tmp45)[0]
+			tmp50 = s[offset:offset + tmp49]
+			offset += tmp49
+			tmp50 += b'\x00' * (4 - tmp49)
+			tmp51 = struct.unpack('I', tmp50)[0]
 			
-			self.var_name = s[offset:offset + tmp46].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp46]
-			offset += tmp46
+			self.var_name = s[offset:offset + tmp51].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp51]
+			offset += tmp51
 		else:
 			self.var_name = None
 		
 		# deserialize self.var_type
-		tmp47 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp52 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp47:
-			tmp48 = struct.unpack('b', s[offset:offset + 1])[0]
+		if tmp52:
+			tmp53 = struct.unpack('b', s[offset:offset + 1])[0]
 			offset += 1
-			self.var_type = EAnimatorVariableType(tmp48)
+			self.var_type = EAnimatorVariableType(tmp53)
 		else:
 			self.var_type = None
 		
 		# deserialize self.int_value
-		tmp49 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp54 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp49:
+		if tmp54:
 			self.int_value = struct.unpack('i', s[offset:offset + 4])[0]
 			offset += 4
 		else:
 			self.int_value = None
 		
 		# deserialize self.float_value
-		tmp50 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp55 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp50:
+		if tmp55:
 			self.float_value = struct.unpack('f', s[offset:offset + 4])[0]
 			offset += 4
 		else:
 			self.float_value = None
 		
 		# deserialize self.bool_value
-		tmp51 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp56 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp51:
+		if tmp56:
 			self.bool_value = struct.unpack('?', s[offset:offset + 1])[0]
 			offset += 1
 		else:
@@ -974,12 +1073,12 @@ class ChangeAnimatorState(BaseAction):
 		# serialize self.state_name
 		s += b'\x00' if self.state_name is None else b'\x01'
 		if self.state_name is not None:
-			tmp52 = b''
-			tmp52 += struct.pack('I', len(self.state_name))
-			while len(tmp52) and tmp52[-1] == b'\x00'[0]:
-				tmp52 = tmp52[:-1]
-			s += struct.pack('B', len(tmp52))
-			s += tmp52
+			tmp57 = b''
+			tmp57 += struct.pack('I', len(self.state_name))
+			while len(tmp57) and tmp57[-1] == b'\x00'[0]:
+				tmp57 = tmp57[:-1]
+			s += struct.pack('B', len(tmp57))
+			s += tmp57
 			
 			s += self.state_name.encode('ISO-8859-1') if PY3 else self.state_name
 		
@@ -1001,34 +1100,34 @@ class ChangeAnimatorState(BaseAction):
 		offset = BaseAction.deserialize(self, s, offset)
 		
 		# deserialize self.state_name
-		tmp53 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp58 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp53:
-			tmp54 = struct.unpack('B', s[offset:offset + 1])[0]
+		if tmp58:
+			tmp59 = struct.unpack('B', s[offset:offset + 1])[0]
 			offset += 1
-			tmp55 = s[offset:offset + tmp54]
-			offset += tmp54
-			tmp55 += b'\x00' * (4 - tmp54)
-			tmp56 = struct.unpack('I', tmp55)[0]
+			tmp60 = s[offset:offset + tmp59]
+			offset += tmp59
+			tmp60 += b'\x00' * (4 - tmp59)
+			tmp61 = struct.unpack('I', tmp60)[0]
 			
-			self.state_name = s[offset:offset + tmp56].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp56]
-			offset += tmp56
+			self.state_name = s[offset:offset + tmp61].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp61]
+			offset += tmp61
 		else:
 			self.state_name = None
 		
 		# deserialize self.layer
-		tmp57 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp62 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp57:
+		if tmp62:
 			self.layer = struct.unpack('i', s[offset:offset + 4])[0]
 			offset += 4
 		else:
 			self.layer = None
 		
 		# deserialize self.normalized_time
-		tmp58 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp63 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp58:
+		if tmp63:
 			self.normalized_time = struct.unpack('f', s[offset:offset + 4])[0]
 			offset += 4
 		else:
@@ -1121,81 +1220,81 @@ class ChangeAudioSource(BaseAction):
 		offset = BaseAction.deserialize(self, s, offset)
 		
 		# deserialize self.audio_clip_asset
-		tmp59 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp64 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp59:
+		if tmp64:
 			self.audio_clip_asset = Asset()
 			offset = self.audio_clip_asset.deserialize(s, offset)
 		else:
 			self.audio_clip_asset = None
 		
 		# deserialize self.time
-		tmp60 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp65 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp60:
+		if tmp65:
 			self.time = struct.unpack('f', s[offset:offset + 4])[0]
 			offset += 4
 		else:
 			self.time = None
 		
 		# deserialize self.mute
-		tmp61 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp66 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp61:
+		if tmp66:
 			self.mute = struct.unpack('?', s[offset:offset + 1])[0]
 			offset += 1
 		else:
 			self.mute = None
 		
 		# deserialize self.loop
-		tmp62 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp67 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp62:
+		if tmp67:
 			self.loop = struct.unpack('?', s[offset:offset + 1])[0]
 			offset += 1
 		else:
 			self.loop = None
 		
 		# deserialize self.priority
-		tmp63 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp68 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp63:
+		if tmp68:
 			self.priority = struct.unpack('i', s[offset:offset + 4])[0]
 			offset += 4
 		else:
 			self.priority = None
 		
 		# deserialize self.volume
-		tmp64 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp69 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp64:
+		if tmp69:
 			self.volume = struct.unpack('f', s[offset:offset + 4])[0]
 			offset += 4
 		else:
 			self.volume = None
 		
 		# deserialize self.spatial_blend
-		tmp65 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp70 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp65:
+		if tmp70:
 			self.spatial_blend = struct.unpack('f', s[offset:offset + 4])[0]
 			offset += 4
 		else:
 			self.spatial_blend = None
 		
 		# deserialize self.play
-		tmp66 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp71 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp66:
+		if tmp71:
 			self.play = struct.unpack('?', s[offset:offset + 1])[0]
 			offset += 1
 		else:
 			self.play = None
 		
 		# deserialize self.stop
-		tmp67 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp72 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp67:
+		if tmp72:
 			self.stop = struct.unpack('?', s[offset:offset + 1])[0]
 			offset += 1
 		else:
@@ -1276,63 +1375,63 @@ class ChangeRectTransform(BaseAction):
 		offset = BaseAction.deserialize(self, s, offset)
 		
 		# deserialize self.position
-		tmp68 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp73 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp68:
+		if tmp73:
 			self.position = Vector3()
 			offset = self.position.deserialize(s, offset)
 		else:
 			self.position = None
 		
 		# deserialize self.rotation
-		tmp69 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp74 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp69:
+		if tmp74:
 			self.rotation = Vector3()
 			offset = self.rotation.deserialize(s, offset)
 		else:
 			self.rotation = None
 		
 		# deserialize self.scale
-		tmp70 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp75 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp70:
+		if tmp75:
 			self.scale = Vector3()
 			offset = self.scale.deserialize(s, offset)
 		else:
 			self.scale = None
 		
 		# deserialize self.pivot
-		tmp71 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp76 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp71:
+		if tmp76:
 			self.pivot = Vector2()
 			offset = self.pivot.deserialize(s, offset)
 		else:
 			self.pivot = None
 		
 		# deserialize self.anchor_min
-		tmp72 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp77 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp72:
+		if tmp77:
 			self.anchor_min = Vector2()
 			offset = self.anchor_min.deserialize(s, offset)
 		else:
 			self.anchor_min = None
 		
 		# deserialize self.anchor_max
-		tmp73 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp78 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp73:
+		if tmp78:
 			self.anchor_max = Vector2()
 			offset = self.anchor_max.deserialize(s, offset)
 		else:
 			self.anchor_max = None
 		
 		# deserialize self.size
-		tmp74 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp79 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp74:
+		if tmp79:
 			self.size = Vector2()
 			offset = self.size.deserialize(s, offset)
 		else:
@@ -1416,24 +1515,24 @@ class ChangeText(BaseAction):
 		# serialize self.font_name
 		s += b'\x00' if self.font_name is None else b'\x01'
 		if self.font_name is not None:
-			tmp75 = b''
-			tmp75 += struct.pack('I', len(self.font_name))
-			while len(tmp75) and tmp75[-1] == b'\x00'[0]:
-				tmp75 = tmp75[:-1]
-			s += struct.pack('B', len(tmp75))
-			s += tmp75
+			tmp80 = b''
+			tmp80 += struct.pack('I', len(self.font_name))
+			while len(tmp80) and tmp80[-1] == b'\x00'[0]:
+				tmp80 = tmp80[:-1]
+			s += struct.pack('B', len(tmp80))
+			s += tmp80
 			
 			s += self.font_name.encode('ISO-8859-1') if PY3 else self.font_name
 		
 		# serialize self.text
 		s += b'\x00' if self.text is None else b'\x01'
 		if self.text is not None:
-			tmp76 = b''
-			tmp76 += struct.pack('I', len(self.text))
-			while len(tmp76) and tmp76[-1] == b'\x00'[0]:
-				tmp76 = tmp76[:-1]
-			s += struct.pack('B', len(tmp76))
-			s += tmp76
+			tmp81 = b''
+			tmp81 += struct.pack('I', len(self.text))
+			while len(tmp81) and tmp81[-1] == b'\x00'[0]:
+				tmp81 = tmp81[:-1]
+			s += struct.pack('B', len(tmp81))
+			s += tmp81
 			
 			s += self.text.encode('ISO-8859-1') if PY3 else self.text
 		
@@ -1460,69 +1559,69 @@ class ChangeText(BaseAction):
 		offset = BaseAction.deserialize(self, s, offset)
 		
 		# deserialize self.font_asset
-		tmp77 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp82 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp77:
+		if tmp82:
 			self.font_asset = Asset()
 			offset = self.font_asset.deserialize(s, offset)
 		else:
 			self.font_asset = None
 		
 		# deserialize self.font_name
-		tmp78 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp83 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp78:
-			tmp79 = struct.unpack('B', s[offset:offset + 1])[0]
+		if tmp83:
+			tmp84 = struct.unpack('B', s[offset:offset + 1])[0]
 			offset += 1
-			tmp80 = s[offset:offset + tmp79]
-			offset += tmp79
-			tmp80 += b'\x00' * (4 - tmp79)
-			tmp81 = struct.unpack('I', tmp80)[0]
+			tmp85 = s[offset:offset + tmp84]
+			offset += tmp84
+			tmp85 += b'\x00' * (4 - tmp84)
+			tmp86 = struct.unpack('I', tmp85)[0]
 			
-			self.font_name = s[offset:offset + tmp81].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp81]
-			offset += tmp81
+			self.font_name = s[offset:offset + tmp86].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp86]
+			offset += tmp86
 		else:
 			self.font_name = None
 		
 		# deserialize self.text
-		tmp82 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp87 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp82:
-			tmp83 = struct.unpack('B', s[offset:offset + 1])[0]
+		if tmp87:
+			tmp88 = struct.unpack('B', s[offset:offset + 1])[0]
 			offset += 1
-			tmp84 = s[offset:offset + tmp83]
-			offset += tmp83
-			tmp84 += b'\x00' * (4 - tmp83)
-			tmp85 = struct.unpack('I', tmp84)[0]
+			tmp89 = s[offset:offset + tmp88]
+			offset += tmp88
+			tmp89 += b'\x00' * (4 - tmp88)
+			tmp90 = struct.unpack('I', tmp89)[0]
 			
-			self.text = s[offset:offset + tmp85].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp85]
-			offset += tmp85
+			self.text = s[offset:offset + tmp90].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp90]
+			offset += tmp90
 		else:
 			self.text = None
 		
 		# deserialize self.font_size
-		tmp86 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp91 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp86:
+		if tmp91:
 			self.font_size = struct.unpack('f', s[offset:offset + 4])[0]
 			offset += 4
 		else:
 			self.font_size = None
 		
 		# deserialize self.alignment
-		tmp87 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp92 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp87:
-			tmp88 = struct.unpack('h', s[offset:offset + 2])[0]
+		if tmp92:
+			tmp93 = struct.unpack('h', s[offset:offset + 2])[0]
 			offset += 2
-			self.alignment = ETextAlignmentOption(tmp88)
+			self.alignment = ETextAlignmentOption(tmp93)
 		else:
 			self.alignment = None
 		
 		# deserialize self.word_wrapping_ratios
-		tmp89 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp94 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp89:
+		if tmp94:
 			self.word_wrapping_ratios = struct.unpack('f', s[offset:offset + 4])[0]
 			offset += 4
 		else:
@@ -1604,59 +1703,136 @@ class ChangeSlider(BaseAction):
 		offset = BaseAction.deserialize(self, s, offset)
 		
 		# deserialize self.value
-		tmp90 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp95 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp90:
+		if tmp95:
 			self.value = struct.unpack('f', s[offset:offset + 4])[0]
 			offset += 4
 		else:
 			self.value = None
 		
 		# deserialize self.max_value
-		tmp91 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp96 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp91:
+		if tmp96:
 			self.max_value = struct.unpack('f', s[offset:offset + 4])[0]
 			offset += 4
 		else:
 			self.max_value = None
 		
 		# deserialize self.min_value
-		tmp92 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp97 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp92:
+		if tmp97:
 			self.min_value = struct.unpack('f', s[offset:offset + 4])[0]
 			offset += 4
 		else:
 			self.min_value = None
 		
 		# deserialize self.direction
-		tmp93 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp98 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp93:
-			tmp94 = struct.unpack('h', s[offset:offset + 2])[0]
+		if tmp98:
+			tmp99 = struct.unpack('h', s[offset:offset + 2])[0]
 			offset += 2
-			self.direction = ESliderDirection(tmp94)
+			self.direction = ESliderDirection(tmp99)
 		else:
 			self.direction = None
 		
 		# deserialize self.background_color
-		tmp95 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp100 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp95:
+		if tmp100:
 			self.background_color = Vector4()
 			offset = self.background_color.deserialize(s, offset)
 		else:
 			self.background_color = None
 		
 		# deserialize self.fill_color
-		tmp96 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp101 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp96:
+		if tmp101:
 			self.fill_color = Vector4()
 			offset = self.fill_color.deserialize(s, offset)
 		else:
 			self.fill_color = None
+		
+		return offset
+
+
+class ChangeImage(BaseAction):
+
+	@staticmethod
+	def name():
+		return 'ChangeImage'
+
+
+	def __init__(self, cycle=None, ref=None, child_ref=None, duration_cycles=None, sprite_asset=None, color=None, material_asset=None):
+		self.initialize(cycle, ref, child_ref, duration_cycles, sprite_asset, color, material_asset)
+	
+
+	def initialize(self, cycle=None, ref=None, child_ref=None, duration_cycles=None, sprite_asset=None, color=None, material_asset=None):
+		BaseAction.initialize(self, cycle, ref, child_ref, duration_cycles)
+		
+		self.sprite_asset = sprite_asset
+		self.color = color
+		self.material_asset = material_asset
+	
+
+	def serialize(self):
+		s = b''
+		
+		# serialize parents
+		s += BaseAction.serialize(self)
+		
+		# serialize self.sprite_asset
+		s += b'\x00' if self.sprite_asset is None else b'\x01'
+		if self.sprite_asset is not None:
+			s += self.sprite_asset.serialize()
+		
+		# serialize self.color
+		s += b'\x00' if self.color is None else b'\x01'
+		if self.color is not None:
+			s += self.color.serialize()
+		
+		# serialize self.material_asset
+		s += b'\x00' if self.material_asset is None else b'\x01'
+		if self.material_asset is not None:
+			s += self.material_asset.serialize()
+		
+		return s
+	
+
+	def deserialize(self, s, offset=0):
+		# deserialize parents
+		offset = BaseAction.deserialize(self, s, offset)
+		
+		# deserialize self.sprite_asset
+		tmp102 = struct.unpack('B', s[offset:offset + 1])[0]
+		offset += 1
+		if tmp102:
+			self.sprite_asset = Asset()
+			offset = self.sprite_asset.deserialize(s, offset)
+		else:
+			self.sprite_asset = None
+		
+		# deserialize self.color
+		tmp103 = struct.unpack('B', s[offset:offset + 1])[0]
+		offset += 1
+		if tmp103:
+			self.color = Vector4()
+			offset = self.color.deserialize(s, offset)
+		else:
+			self.color = None
+		
+		# deserialize self.material_asset
+		tmp104 = struct.unpack('B', s[offset:offset + 1])[0]
+		offset += 1
+		if tmp104:
+			self.material_asset = Asset()
+			offset = self.material_asset.deserialize(s, offset)
+		else:
+			self.material_asset = None
 		
 		return offset
 
@@ -1715,36 +1891,36 @@ class ChangeRawImage(BaseAction):
 		offset = BaseAction.deserialize(self, s, offset)
 		
 		# deserialize self.texture_asset
-		tmp97 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp105 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp97:
+		if tmp105:
 			self.texture_asset = Asset()
 			offset = self.texture_asset.deserialize(s, offset)
 		else:
 			self.texture_asset = None
 		
 		# deserialize self.material_asset
-		tmp98 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp106 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp98:
+		if tmp106:
 			self.material_asset = Asset()
 			offset = self.material_asset.deserialize(s, offset)
 		else:
 			self.material_asset = None
 		
 		# deserialize self.color
-		tmp99 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp107 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp99:
+		if tmp107:
 			self.color = Vector4()
 			offset = self.color.deserialize(s, offset)
 		else:
 			self.color = None
 		
 		# deserialize self.uv_rect
-		tmp100 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp108 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp100:
+		if tmp108:
 			self.uv_rect = Vector4()
 			offset = self.uv_rect.deserialize(s, offset)
 		else:
@@ -1803,12 +1979,12 @@ class ChangeSiblingOrder(BaseAction):
 		# serialize self.sibling_ref_as_base_index
 		s += b'\x00' if self.sibling_ref_as_base_index is None else b'\x01'
 		if self.sibling_ref_as_base_index is not None:
-			tmp101 = b''
-			tmp101 += struct.pack('I', len(self.sibling_ref_as_base_index))
-			while len(tmp101) and tmp101[-1] == b'\x00'[0]:
-				tmp101 = tmp101[:-1]
-			s += struct.pack('B', len(tmp101))
-			s += tmp101
+			tmp109 = b''
+			tmp109 += struct.pack('I', len(self.sibling_ref_as_base_index))
+			while len(tmp109) and tmp109[-1] == b'\x00'[0]:
+				tmp109 = tmp109[:-1]
+			s += struct.pack('B', len(tmp109))
+			s += tmp109
 			
 			s += self.sibling_ref_as_base_index.encode('ISO-8859-1') if PY3 else self.sibling_ref_as_base_index
 		
@@ -1820,54 +1996,54 @@ class ChangeSiblingOrder(BaseAction):
 		offset = BaseAction.deserialize(self, s, offset)
 		
 		# deserialize self.new_index
-		tmp102 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp110 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp102:
+		if tmp110:
 			self.new_index = struct.unpack('i', s[offset:offset + 4])[0]
 			offset += 4
 		else:
 			self.new_index = None
 		
 		# deserialize self.goto_first
-		tmp103 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp111 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp103:
+		if tmp111:
 			self.goto_first = struct.unpack('?', s[offset:offset + 1])[0]
 			offset += 1
 		else:
 			self.goto_first = None
 		
 		# deserialize self.goto_last
-		tmp104 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp112 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp104:
+		if tmp112:
 			self.goto_last = struct.unpack('?', s[offset:offset + 1])[0]
 			offset += 1
 		else:
 			self.goto_last = None
 		
 		# deserialize self.change_index
-		tmp105 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp113 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp105:
+		if tmp113:
 			self.change_index = struct.unpack('i', s[offset:offset + 4])[0]
 			offset += 4
 		else:
 			self.change_index = None
 		
 		# deserialize self.sibling_ref_as_base_index
-		tmp106 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp114 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp106:
-			tmp107 = struct.unpack('B', s[offset:offset + 1])[0]
+		if tmp114:
+			tmp115 = struct.unpack('B', s[offset:offset + 1])[0]
 			offset += 1
-			tmp108 = s[offset:offset + tmp107]
-			offset += tmp107
-			tmp108 += b'\x00' * (4 - tmp107)
-			tmp109 = struct.unpack('I', tmp108)[0]
+			tmp116 = s[offset:offset + tmp115]
+			offset += tmp115
+			tmp116 += b'\x00' * (4 - tmp115)
+			tmp117 = struct.unpack('I', tmp116)[0]
 			
-			self.sibling_ref_as_base_index = s[offset:offset + tmp109].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp109]
-			offset += tmp109
+			self.sibling_ref_as_base_index = s[offset:offset + tmp117].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp117]
+			offset += tmp117
 		else:
 			self.sibling_ref_as_base_index = None
 		
@@ -1902,12 +2078,12 @@ class ManageComponent(BaseAction):
 		# serialize self.type
 		s += b'\x00' if self.type is None else b'\x01'
 		if self.type is not None:
-			tmp110 = b''
-			tmp110 += struct.pack('I', len(self.type))
-			while len(tmp110) and tmp110[-1] == b'\x00'[0]:
-				tmp110 = tmp110[:-1]
-			s += struct.pack('B', len(tmp110))
-			s += tmp110
+			tmp118 = b''
+			tmp118 += struct.pack('I', len(self.type))
+			while len(tmp118) and tmp118[-1] == b'\x00'[0]:
+				tmp118 = tmp118[:-1]
+			s += struct.pack('B', len(tmp118))
+			s += tmp118
 			
 			s += self.type.encode('ISO-8859-1') if PY3 else self.type
 		
@@ -1929,34 +2105,34 @@ class ManageComponent(BaseAction):
 		offset = BaseAction.deserialize(self, s, offset)
 		
 		# deserialize self.type
-		tmp111 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp119 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp111:
-			tmp112 = struct.unpack('B', s[offset:offset + 1])[0]
+		if tmp119:
+			tmp120 = struct.unpack('B', s[offset:offset + 1])[0]
 			offset += 1
-			tmp113 = s[offset:offset + tmp112]
-			offset += tmp112
-			tmp113 += b'\x00' * (4 - tmp112)
-			tmp114 = struct.unpack('I', tmp113)[0]
+			tmp121 = s[offset:offset + tmp120]
+			offset += tmp120
+			tmp121 += b'\x00' * (4 - tmp120)
+			tmp122 = struct.unpack('I', tmp121)[0]
 			
-			self.type = s[offset:offset + tmp114].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp114]
-			offset += tmp114
+			self.type = s[offset:offset + tmp122].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp122]
+			offset += tmp122
 		else:
 			self.type = None
 		
 		# deserialize self.add
-		tmp115 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp123 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp115:
+		if tmp123:
 			self.add = struct.unpack('?', s[offset:offset + 1])[0]
 			offset += 1
 		else:
 			self.add = None
 		
 		# deserialize self.is_active
-		tmp116 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp124 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp116:
+		if tmp124:
 			self.is_active = struct.unpack('?', s[offset:offset + 1])[0]
 			offset += 1
 		else:
@@ -2025,45 +2201,45 @@ class ChangeSprite(BaseAction):
 		offset = BaseAction.deserialize(self, s, offset)
 		
 		# deserialize self.sprite_asset
-		tmp117 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp125 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp117:
+		if tmp125:
 			self.sprite_asset = Asset()
 			offset = self.sprite_asset.deserialize(s, offset)
 		else:
 			self.sprite_asset = None
 		
 		# deserialize self.color
-		tmp118 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp126 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp118:
+		if tmp126:
 			self.color = Vector4()
 			offset = self.color.deserialize(s, offset)
 		else:
 			self.color = None
 		
 		# deserialize self.flip_x
-		tmp119 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp127 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp119:
+		if tmp127:
 			self.flip_x = struct.unpack('?', s[offset:offset + 1])[0]
 			offset += 1
 		else:
 			self.flip_x = None
 		
 		# deserialize self.flip_y
-		tmp120 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp128 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp120:
+		if tmp128:
 			self.flip_y = struct.unpack('?', s[offset:offset + 1])[0]
 			offset += 1
 		else:
 			self.flip_y = None
 		
 		# deserialize self.order
-		tmp121 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp129 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp121:
+		if tmp129:
 			self.order = struct.unpack('i', s[offset:offset + 4])[0]
 			offset += 4
 		else:
@@ -2114,18 +2290,18 @@ class ChangeMaterial(BaseAction):
 		offset = BaseAction.deserialize(self, s, offset)
 		
 		# deserialize self.material_asset
-		tmp122 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp130 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp122:
+		if tmp130:
 			self.material_asset = Asset()
 			offset = self.material_asset.deserialize(s, offset)
 		else:
 			self.material_asset = None
 		
 		# deserialize self.index
-		tmp123 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp131 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp123:
+		if tmp131:
 			self.index = struct.unpack('i', s[offset:offset + 4])[0]
 			offset += 4
 		else:
@@ -2182,27 +2358,27 @@ class ChangeEllipse2D(BaseAction):
 		offset = BaseAction.deserialize(self, s, offset)
 		
 		# deserialize self.fill_color
-		tmp124 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp132 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp124:
+		if tmp132:
 			self.fill_color = Vector4()
 			offset = self.fill_color.deserialize(s, offset)
 		else:
 			self.fill_color = None
 		
 		# deserialize self.x_radius
-		tmp125 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp133 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp125:
+		if tmp133:
 			self.x_radius = struct.unpack('f', s[offset:offset + 4])[0]
 			offset += 4
 		else:
 			self.x_radius = None
 		
 		# deserialize self.y_radius
-		tmp126 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp134 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp126:
+		if tmp134:
 			self.y_radius = struct.unpack('f', s[offset:offset + 4])[0]
 			offset += 4
 		else:
@@ -2243,17 +2419,17 @@ class ChangePolygon2D(BaseAction):
 		# serialize self.vertices
 		s += b'\x00' if self.vertices is None else b'\x01'
 		if self.vertices is not None:
-			tmp127 = b''
-			tmp127 += struct.pack('I', len(self.vertices))
-			while len(tmp127) and tmp127[-1] == b'\x00'[0]:
-				tmp127 = tmp127[:-1]
-			s += struct.pack('B', len(tmp127))
-			s += tmp127
+			tmp135 = b''
+			tmp135 += struct.pack('I', len(self.vertices))
+			while len(tmp135) and tmp135[-1] == b'\x00'[0]:
+				tmp135 = tmp135[:-1]
+			s += struct.pack('B', len(tmp135))
+			s += tmp135
 			
-			for tmp128 in self.vertices:
-				s += b'\x00' if tmp128 is None else b'\x01'
-				if tmp128 is not None:
-					s += tmp128.serialize()
+			for tmp136 in self.vertices:
+				s += b'\x00' if tmp136 is None else b'\x01'
+				if tmp136 is not None:
+					s += tmp136.serialize()
 		
 		return s
 	
@@ -2263,35 +2439,35 @@ class ChangePolygon2D(BaseAction):
 		offset = BaseAction.deserialize(self, s, offset)
 		
 		# deserialize self.fill_color
-		tmp129 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp137 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp129:
+		if tmp137:
 			self.fill_color = Vector4()
 			offset = self.fill_color.deserialize(s, offset)
 		else:
 			self.fill_color = None
 		
 		# deserialize self.vertices
-		tmp130 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp138 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp130:
-			tmp131 = struct.unpack('B', s[offset:offset + 1])[0]
+		if tmp138:
+			tmp139 = struct.unpack('B', s[offset:offset + 1])[0]
 			offset += 1
-			tmp132 = s[offset:offset + tmp131]
-			offset += tmp131
-			tmp132 += b'\x00' * (4 - tmp131)
-			tmp133 = struct.unpack('I', tmp132)[0]
+			tmp140 = s[offset:offset + tmp139]
+			offset += tmp139
+			tmp140 += b'\x00' * (4 - tmp139)
+			tmp141 = struct.unpack('I', tmp140)[0]
 			
 			self.vertices = []
-			for tmp134 in range(tmp133):
-				tmp136 = struct.unpack('B', s[offset:offset + 1])[0]
+			for tmp142 in range(tmp141):
+				tmp144 = struct.unpack('B', s[offset:offset + 1])[0]
 				offset += 1
-				if tmp136:
-					tmp135 = Vector2()
-					offset = tmp135.deserialize(s, offset)
+				if tmp144:
+					tmp143 = Vector2()
+					offset = tmp143.deserialize(s, offset)
 				else:
-					tmp135 = None
-				self.vertices.append(tmp135)
+					tmp143 = None
+				self.vertices.append(tmp143)
 		else:
 			self.vertices = None
 		
@@ -2334,17 +2510,17 @@ class ChangeLine(BaseAction):
 		# serialize self.vertices
 		s += b'\x00' if self.vertices is None else b'\x01'
 		if self.vertices is not None:
-			tmp137 = b''
-			tmp137 += struct.pack('I', len(self.vertices))
-			while len(tmp137) and tmp137[-1] == b'\x00'[0]:
-				tmp137 = tmp137[:-1]
-			s += struct.pack('B', len(tmp137))
-			s += tmp137
+			tmp145 = b''
+			tmp145 += struct.pack('I', len(self.vertices))
+			while len(tmp145) and tmp145[-1] == b'\x00'[0]:
+				tmp145 = tmp145[:-1]
+			s += struct.pack('B', len(tmp145))
+			s += tmp145
 			
-			for tmp138 in self.vertices:
-				s += b'\x00' if tmp138 is None else b'\x01'
-				if tmp138 is not None:
-					s += tmp138.serialize()
+			for tmp146 in self.vertices:
+				s += b'\x00' if tmp146 is None else b'\x01'
+				if tmp146 is not None:
+					s += tmp146.serialize()
 		
 		# serialize self.width
 		s += b'\x00' if self.width is None else b'\x01'
@@ -2374,69 +2550,69 @@ class ChangeLine(BaseAction):
 		offset = BaseAction.deserialize(self, s, offset)
 		
 		# deserialize self.fill_color
-		tmp139 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp147 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp139:
+		if tmp147:
 			self.fill_color = Vector4()
 			offset = self.fill_color.deserialize(s, offset)
 		else:
 			self.fill_color = None
 		
 		# deserialize self.vertices
-		tmp140 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp148 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp140:
-			tmp141 = struct.unpack('B', s[offset:offset + 1])[0]
+		if tmp148:
+			tmp149 = struct.unpack('B', s[offset:offset + 1])[0]
 			offset += 1
-			tmp142 = s[offset:offset + tmp141]
-			offset += tmp141
-			tmp142 += b'\x00' * (4 - tmp141)
-			tmp143 = struct.unpack('I', tmp142)[0]
+			tmp150 = s[offset:offset + tmp149]
+			offset += tmp149
+			tmp150 += b'\x00' * (4 - tmp149)
+			tmp151 = struct.unpack('I', tmp150)[0]
 			
 			self.vertices = []
-			for tmp144 in range(tmp143):
-				tmp146 = struct.unpack('B', s[offset:offset + 1])[0]
+			for tmp152 in range(tmp151):
+				tmp154 = struct.unpack('B', s[offset:offset + 1])[0]
 				offset += 1
-				if tmp146:
-					tmp145 = Vector2()
-					offset = tmp145.deserialize(s, offset)
+				if tmp154:
+					tmp153 = Vector2()
+					offset = tmp153.deserialize(s, offset)
 				else:
-					tmp145 = None
-				self.vertices.append(tmp145)
+					tmp153 = None
+				self.vertices.append(tmp153)
 		else:
 			self.vertices = None
 		
 		# deserialize self.width
-		tmp147 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp155 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp147:
+		if tmp155:
 			self.width = struct.unpack('f', s[offset:offset + 4])[0]
 			offset += 4
 		else:
 			self.width = None
 		
 		# deserialize self.corner_vertices
-		tmp148 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp156 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp148:
+		if tmp156:
 			self.corner_vertices = struct.unpack('i', s[offset:offset + 4])[0]
 			offset += 4
 		else:
 			self.corner_vertices = None
 		
 		# deserialize self.end_cap_vertices
-		tmp149 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp157 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp149:
+		if tmp157:
 			self.end_cap_vertices = struct.unpack('i', s[offset:offset + 4])[0]
 			offset += 4
 		else:
 			self.end_cap_vertices = None
 		
 		# deserialize self.loop
-		tmp150 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp158 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp150:
+		if tmp158:
 			self.loop = struct.unpack('?', s[offset:offset + 1])[0]
 			offset += 1
 		else:
@@ -2571,128 +2747,128 @@ class ChangeLight(BaseAction):
 		offset = BaseAction.deserialize(self, s, offset)
 		
 		# deserialize self.type
-		tmp151 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp159 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp151:
-			tmp152 = struct.unpack('b', s[offset:offset + 1])[0]
+		if tmp159:
+			tmp160 = struct.unpack('b', s[offset:offset + 1])[0]
 			offset += 1
-			self.type = ELightType(tmp152)
+			self.type = ELightType(tmp160)
 		else:
 			self.type = None
 		
 		# deserialize self.range
-		tmp153 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp161 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp153:
+		if tmp161:
 			self.range = struct.unpack('f', s[offset:offset + 4])[0]
 			offset += 4
 		else:
 			self.range = None
 		
 		# deserialize self.spot_angle
-		tmp154 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp162 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp154:
+		if tmp162:
 			self.spot_angle = struct.unpack('f', s[offset:offset + 4])[0]
 			offset += 4
 		else:
 			self.spot_angle = None
 		
 		# deserialize self.color
-		tmp155 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp163 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp155:
+		if tmp163:
 			self.color = Vector4()
 			offset = self.color.deserialize(s, offset)
 		else:
 			self.color = None
 		
 		# deserialize self.intensity
-		tmp156 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp164 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp156:
+		if tmp164:
 			self.intensity = struct.unpack('f', s[offset:offset + 4])[0]
 			offset += 4
 		else:
 			self.intensity = None
 		
 		# deserialize self.indirect_multiplier
-		tmp157 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp165 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp157:
+		if tmp165:
 			self.indirect_multiplier = struct.unpack('f', s[offset:offset + 4])[0]
 			offset += 4
 		else:
 			self.indirect_multiplier = None
 		
 		# deserialize self.shadow_type
-		tmp158 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp166 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp158:
-			tmp159 = struct.unpack('b', s[offset:offset + 1])[0]
+		if tmp166:
+			tmp167 = struct.unpack('b', s[offset:offset + 1])[0]
 			offset += 1
-			self.shadow_type = ELightShadowType(tmp159)
+			self.shadow_type = ELightShadowType(tmp167)
 		else:
 			self.shadow_type = None
 		
 		# deserialize self.shadow_strength
-		tmp160 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp168 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp160:
+		if tmp168:
 			self.shadow_strength = struct.unpack('f', s[offset:offset + 4])[0]
 			offset += 4
 		else:
 			self.shadow_strength = None
 		
 		# deserialize self.shadow_bias
-		tmp161 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp169 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp161:
+		if tmp169:
 			self.shadow_bias = struct.unpack('f', s[offset:offset + 4])[0]
 			offset += 4
 		else:
 			self.shadow_bias = None
 		
 		# deserialize self.shadow_normal_bias
-		tmp162 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp170 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp162:
+		if tmp170:
 			self.shadow_normal_bias = struct.unpack('f', s[offset:offset + 4])[0]
 			offset += 4
 		else:
 			self.shadow_normal_bias = None
 		
 		# deserialize self.shadow_near_plane
-		tmp163 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp171 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp163:
+		if tmp171:
 			self.shadow_near_plane = struct.unpack('f', s[offset:offset + 4])[0]
 			offset += 4
 		else:
 			self.shadow_near_plane = None
 		
 		# deserialize self.cookie_asset
-		tmp164 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp172 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp164:
+		if tmp172:
 			self.cookie_asset = Asset()
 			offset = self.cookie_asset.deserialize(s, offset)
 		else:
 			self.cookie_asset = None
 		
 		# deserialize self.cookie_size
-		tmp165 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp173 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp165:
+		if tmp173:
 			self.cookie_size = struct.unpack('f', s[offset:offset + 4])[0]
 			offset += 4
 		else:
 			self.cookie_size = None
 		
 		# deserialize self.flare_asset
-		tmp166 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp174 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp166:
+		if tmp174:
 			self.flare_asset = Asset()
 			offset = self.flare_asset.deserialize(s, offset)
 		else:
@@ -2715,11 +2891,11 @@ class ChangeCamera(BaseAction):
 		return 'ChangeCamera'
 
 
-	def __init__(self, cycle=None, ref=None, child_ref=None, duration_cycles=None, clear_flag=None, background_color=None, is_orthographic=None, orthographic_size=None, field_of_view=None, near_clip_plane=None, far_clip_plane=None, min_position=None, max_position=None, min_rotation=None, max_rotation=None, post_processing_profile_asset=None):
-		self.initialize(cycle, ref, child_ref, duration_cycles, clear_flag, background_color, is_orthographic, orthographic_size, field_of_view, near_clip_plane, far_clip_plane, min_position, max_position, min_rotation, max_rotation, post_processing_profile_asset)
+	def __init__(self, cycle=None, ref=None, child_ref=None, duration_cycles=None, clear_flag=None, background_color=None, is_orthographic=None, orthographic_size=None, field_of_view=None, near_clip_plane=None, far_clip_plane=None, min_position=None, max_position=None, min_rotation=None, max_rotation=None, min_zoom=None, max_zoom=None, post_process_profile_asset=None):
+		self.initialize(cycle, ref, child_ref, duration_cycles, clear_flag, background_color, is_orthographic, orthographic_size, field_of_view, near_clip_plane, far_clip_plane, min_position, max_position, min_rotation, max_rotation, min_zoom, max_zoom, post_process_profile_asset)
 	
 
-	def initialize(self, cycle=None, ref=None, child_ref=None, duration_cycles=None, clear_flag=None, background_color=None, is_orthographic=None, orthographic_size=None, field_of_view=None, near_clip_plane=None, far_clip_plane=None, min_position=None, max_position=None, min_rotation=None, max_rotation=None, post_processing_profile_asset=None):
+	def initialize(self, cycle=None, ref=None, child_ref=None, duration_cycles=None, clear_flag=None, background_color=None, is_orthographic=None, orthographic_size=None, field_of_view=None, near_clip_plane=None, far_clip_plane=None, min_position=None, max_position=None, min_rotation=None, max_rotation=None, min_zoom=None, max_zoom=None, post_process_profile_asset=None):
 		BaseAction.initialize(self, cycle, ref, child_ref, duration_cycles)
 		
 		self.clear_flag = clear_flag
@@ -2733,7 +2909,9 @@ class ChangeCamera(BaseAction):
 		self.max_position = max_position
 		self.min_rotation = min_rotation
 		self.max_rotation = max_rotation
-		self.post_processing_profile_asset = post_processing_profile_asset
+		self.min_zoom = min_zoom
+		self.max_zoom = max_zoom
+		self.post_process_profile_asset = post_process_profile_asset
 	
 
 	def serialize(self):
@@ -2797,10 +2975,20 @@ class ChangeCamera(BaseAction):
 		if self.max_rotation is not None:
 			s += self.max_rotation.serialize()
 		
-		# serialize self.post_processing_profile_asset
-		s += b'\x00' if self.post_processing_profile_asset is None else b'\x01'
-		if self.post_processing_profile_asset is not None:
-			s += self.post_processing_profile_asset.serialize()
+		# serialize self.min_zoom
+		s += b'\x00' if self.min_zoom is None else b'\x01'
+		if self.min_zoom is not None:
+			s += struct.pack('f', self.min_zoom)
+		
+		# serialize self.max_zoom
+		s += b'\x00' if self.max_zoom is None else b'\x01'
+		if self.max_zoom is not None:
+			s += struct.pack('f', self.max_zoom)
+		
+		# serialize self.post_process_profile_asset
+		s += b'\x00' if self.post_process_profile_asset is None else b'\x01'
+		if self.post_process_profile_asset is not None:
+			s += self.post_process_profile_asset.serialize()
 		
 		return s
 	
@@ -2810,195 +2998,131 @@ class ChangeCamera(BaseAction):
 		offset = BaseAction.deserialize(self, s, offset)
 		
 		# deserialize self.clear_flag
-		tmp167 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp175 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp167:
-			tmp168 = struct.unpack('b', s[offset:offset + 1])[0]
+		if tmp175:
+			tmp176 = struct.unpack('b', s[offset:offset + 1])[0]
 			offset += 1
-			self.clear_flag = ECameraClearFlag(tmp168)
+			self.clear_flag = ECameraClearFlag(tmp176)
 		else:
 			self.clear_flag = None
 		
 		# deserialize self.background_color
-		tmp169 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp177 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp169:
+		if tmp177:
 			self.background_color = Vector4()
 			offset = self.background_color.deserialize(s, offset)
 		else:
 			self.background_color = None
 		
 		# deserialize self.is_orthographic
-		tmp170 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp178 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp170:
+		if tmp178:
 			self.is_orthographic = struct.unpack('?', s[offset:offset + 1])[0]
 			offset += 1
 		else:
 			self.is_orthographic = None
 		
 		# deserialize self.orthographic_size
-		tmp171 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp179 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp171:
+		if tmp179:
 			self.orthographic_size = struct.unpack('f', s[offset:offset + 4])[0]
 			offset += 4
 		else:
 			self.orthographic_size = None
 		
 		# deserialize self.field_of_view
-		tmp172 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp180 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp172:
+		if tmp180:
 			self.field_of_view = struct.unpack('f', s[offset:offset + 4])[0]
 			offset += 4
 		else:
 			self.field_of_view = None
 		
 		# deserialize self.near_clip_plane
-		tmp173 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp181 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp173:
+		if tmp181:
 			self.near_clip_plane = struct.unpack('f', s[offset:offset + 4])[0]
 			offset += 4
 		else:
 			self.near_clip_plane = None
 		
 		# deserialize self.far_clip_plane
-		tmp174 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp182 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp174:
+		if tmp182:
 			self.far_clip_plane = struct.unpack('f', s[offset:offset + 4])[0]
 			offset += 4
 		else:
 			self.far_clip_plane = None
 		
 		# deserialize self.min_position
-		tmp175 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp183 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp175:
+		if tmp183:
 			self.min_position = Vector3()
 			offset = self.min_position.deserialize(s, offset)
 		else:
 			self.min_position = None
 		
 		# deserialize self.max_position
-		tmp176 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp184 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp176:
+		if tmp184:
 			self.max_position = Vector3()
 			offset = self.max_position.deserialize(s, offset)
 		else:
 			self.max_position = None
 		
 		# deserialize self.min_rotation
-		tmp177 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp185 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp177:
+		if tmp185:
 			self.min_rotation = Vector2()
 			offset = self.min_rotation.deserialize(s, offset)
 		else:
 			self.min_rotation = None
 		
 		# deserialize self.max_rotation
-		tmp178 = struct.unpack('B', s[offset:offset + 1])[0]
+		tmp186 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp178:
+		if tmp186:
 			self.max_rotation = Vector2()
 			offset = self.max_rotation.deserialize(s, offset)
 		else:
 			self.max_rotation = None
 		
-		# deserialize self.post_processing_profile_asset
-		tmp179 = struct.unpack('B', s[offset:offset + 1])[0]
+		# deserialize self.min_zoom
+		tmp187 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp179:
-			self.post_processing_profile_asset = Asset()
-			offset = self.post_processing_profile_asset.deserialize(s, offset)
+		if tmp187:
+			self.min_zoom = struct.unpack('f', s[offset:offset + 4])[0]
+			offset += 4
 		else:
-			self.post_processing_profile_asset = None
+			self.min_zoom = None
 		
-		return offset
-
-
-class StoreBundleData(object):
-
-	@staticmethod
-	def name():
-		return 'StoreBundleData'
-
-
-	def __init__(self, bundle_name=None, bundle_data=None):
-		self.initialize(bundle_name, bundle_data)
-	
-
-	def initialize(self, bundle_name=None, bundle_data=None):
-		self.bundle_name = bundle_name
-		self.bundle_data = bundle_data
-	
-
-	def serialize(self):
-		s = b''
-		
-		# serialize self.bundle_name
-		s += b'\x00' if self.bundle_name is None else b'\x01'
-		if self.bundle_name is not None:
-			tmp180 = b''
-			tmp180 += struct.pack('I', len(self.bundle_name))
-			while len(tmp180) and tmp180[-1] == b'\x00'[0]:
-				tmp180 = tmp180[:-1]
-			s += struct.pack('B', len(tmp180))
-			s += tmp180
-			
-			s += self.bundle_name.encode('ISO-8859-1') if PY3 else self.bundle_name
-		
-		# serialize self.bundle_data
-		s += b'\x00' if self.bundle_data is None else b'\x01'
-		if self.bundle_data is not None:
-			tmp181 = b''
-			tmp181 += struct.pack('I', len(self.bundle_data))
-			while len(tmp181) and tmp181[-1] == b'\x00'[0]:
-				tmp181 = tmp181[:-1]
-			s += struct.pack('B', len(tmp181))
-			s += tmp181
-			
-			s += self.bundle_data.encode('ISO-8859-1') if PY3 else self.bundle_data
-		
-		return s
-	
-
-	def deserialize(self, s, offset=0):
-		# deserialize self.bundle_name
-		tmp182 = struct.unpack('B', s[offset:offset + 1])[0]
+		# deserialize self.max_zoom
+		tmp188 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp182:
-			tmp183 = struct.unpack('B', s[offset:offset + 1])[0]
-			offset += 1
-			tmp184 = s[offset:offset + tmp183]
-			offset += tmp183
-			tmp184 += b'\x00' * (4 - tmp183)
-			tmp185 = struct.unpack('I', tmp184)[0]
-			
-			self.bundle_name = s[offset:offset + tmp185].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp185]
-			offset += tmp185
+		if tmp188:
+			self.max_zoom = struct.unpack('f', s[offset:offset + 4])[0]
+			offset += 4
 		else:
-			self.bundle_name = None
+			self.max_zoom = None
 		
-		# deserialize self.bundle_data
-		tmp186 = struct.unpack('B', s[offset:offset + 1])[0]
+		# deserialize self.post_process_profile_asset
+		tmp189 = struct.unpack('B', s[offset:offset + 1])[0]
 		offset += 1
-		if tmp186:
-			tmp187 = struct.unpack('B', s[offset:offset + 1])[0]
-			offset += 1
-			tmp188 = s[offset:offset + tmp187]
-			offset += tmp187
-			tmp188 += b'\x00' * (4 - tmp187)
-			tmp189 = struct.unpack('I', tmp188)[0]
-			
-			self.bundle_data = s[offset:offset + tmp189].decode('ISO-8859-1') if PY3 else s[offset:offset + tmp189]
-			offset += tmp189
+		if tmp189:
+			self.post_process_profile_asset = Asset()
+			offset = self.post_process_profile_asset.deserialize(s, offset)
 		else:
-			self.bundle_data = None
+			self.post_process_profile_asset = None
 		
 		return offset
 

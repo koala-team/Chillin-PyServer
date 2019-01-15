@@ -39,6 +39,7 @@ w = float
 _def = class
 bundle_name = string
 asset_name = string
+index = int
 
 ##########################################################
 ##########################################################
@@ -57,9 +58,17 @@ _def = class(BaseCreation)
 ##########################################################
 ##########################################################
 
+[EDefaultParent]
+_def = enum <byte>
+	{
+		RootObject,
+		RootCanvas
+	}
+
 [InstantiateBundleAsset]
 _def = class(BaseCreation)
 asset = Asset
+default_parent = EDefaultParent
 
 ##########################################################
 ##########################################################
@@ -88,6 +97,7 @@ _def = enum <byte>
 		Canvas,
 		Text,
 		Slider,
+		Image,
 		RawImage,
 		Panel
 	}
@@ -105,6 +115,13 @@ _def = class(BaseAction)
 ##########################################################
 ##########################################################
 
+[ChangeIsActive]
+_def = class(BaseAction)
+is_active = boolean
+
+##########################################################
+##########################################################
+
 [ChangeVisibility]
 _def = class(BaseAction)
 is_visible = boolean
@@ -117,6 +134,7 @@ _def = class(BaseAction)
 position = Vector3
 rotation = Vector3
 scale = Vector3
+change_local = boolean
 
 ##########################################################
 ##########################################################
@@ -248,6 +266,15 @@ min_value = float
 direction = ESliderDirection
 background_color = Vector4
 fill_color = Vector4
+
+##########################################################
+##########################################################
+
+[ChangeImage]
+_def = class(BaseAction)
+sprite_asset = Asset
+color = Vector4
+material_asset = Asset
 
 ##########################################################
 ##########################################################
@@ -388,15 +415,9 @@ min_position = Vector3
 max_position = Vector3
 min_rotation = Vector2
 max_rotation = Vector2
-post_processing_profile_asset = Asset
-
-##########################################################
-##########################################################
-
-[StoreBundleData]
-_def = class
-bundle_name = string
-bundle_data = string
+min_zoom = float
+max_zoom = float
+post_process_profile_asset = Asset
 
 ##########################################################
 ##########################################################
