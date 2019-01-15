@@ -4,7 +4,6 @@
 from ..config import Config
 from .parser import Parser
 from .messages import SceneActions
-from .scene_actions import StoreBundleData
 from .reference_manager import ReferenceManager
 
 
@@ -24,7 +23,6 @@ class Scene:
 
 
     def initialize(self):
-        self._store_all_bundles_data()
         self.apply_actions()
 
 
@@ -39,13 +37,3 @@ class Scene:
         self._actions.action_types.append(act_type)
         self._actions.action_payloads.append(act_payload)
 
-
-    # Actions
-
-    def _store_all_bundles_data(self):
-        if not Config.config['gui']['auto_sync_bundles']:
-            return
-        for name, path in Config.config['gui']['bundles'].items():
-            with open(path, 'rb') as f:
-                data = Parser.get_string(f.read())
-                self.add_action(StoreBundleData(bundle_name=name, bundle_data=data))

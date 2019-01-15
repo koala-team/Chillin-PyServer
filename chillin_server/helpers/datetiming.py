@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
 
 # python imports
-from time import mktime
 from datetime import datetime
+from calendar import timegm
+from time import time
 
 
 def utcnowts():
-    return mktime(datetime.utcnow().timetuple())
+    return time()
 
 
 def strutcts(date_string, format):
-    return mktime(datetime.strptime(date_string, format).timetuple())
+    return timegm(datetime.strptime(date_string, format).utctimetuple())
+
