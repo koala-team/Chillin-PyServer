@@ -8,6 +8,8 @@ class ReferenceManager:
         self._all_refs = []
         self._custom_ref_table = {}
 
+        self.new('MainCamera')
+
 
     def new(self, custom_ref=None):
         if custom_ref is not None:
@@ -45,3 +47,6 @@ class ReferenceManager:
 
     def exists_custom_ref(self, custom_ref):    
         return custom_ref in self._custom_ref_table
+
+
+default_reference_manager = ReferenceManager()

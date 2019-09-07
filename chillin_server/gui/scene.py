@@ -15,7 +15,6 @@ class Scene:
         self._reset_actions()
 
         self.rm = ReferenceManager()
-        self.rm.new('MainCamera')
 
 
     def _reset_actions(self):
