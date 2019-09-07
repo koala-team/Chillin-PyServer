@@ -10,6 +10,7 @@ from circuits import Component, handler
 # project imports
 from ..events.core import broadcast_msg
 from ..events.game_handlers import start_game, end_game, process_cycle
+from ..helpers.logger import log
 from ..helpers.parser import Parser
 from ..helpers.messages import StartGame, EndGame, BaseSnapshot, RealtimeSnapshot, TurnbasedSnapshot
 from ..helpers.datetiming import utcnowts, strutcts
@@ -84,6 +85,7 @@ class BaseGameHandler(Component):
         self._accept_commands = True
         self.game_running = True
         self.on_update_clients()
+        log("Start the game")
 
 
     @handler('end_game')
@@ -97,6 +99,16 @@ class BaseGameHandler(Component):
             winner_sidename = msg.winner_sidename,
             details = msg.details
         )
+
+        winner = winner_sidename or 'draw'
+        log("Winner side: %s" % winner)
+        if details:
+            log("Details:")
+            for name, sides in details.items():
+                log("  %s:" % name)
+                for side, val in sides.items():
+                    log("    %s -> %s" % (side, val))
+
 
 
     def _send_snapshot(self, world, side_name=None, agent_name=None, msg=None):

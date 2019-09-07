@@ -11,6 +11,7 @@ else:
 
 # project imports
 from ..config import Config
+from ..helpers.logger import log
 from .network import Network
 from .parser import Parser
 from .messages import Auth
@@ -53,6 +54,11 @@ class Protocol:
         self._clients.difference_update(socks)
         self._lock.release()
 
+        if len(socks) == 1:
+            log("A spectator has left the game")
+        elif len(socks) > 1:
+            log("%s spectators have left the game" % len(socks))
+
 
     def _can_join(self, sock):
         if len(self._clients) >= Config.config['gui'].get('max_spectators', 5):
@@ -77,6 +83,7 @@ class Protocol:
 
             if authenticated:
                 self._add_client(sock)
+                log("A spectator has joined the game")
 
 
         while self._running.is_set():

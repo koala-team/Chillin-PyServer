@@ -12,6 +12,7 @@ from circuits.net.events import write
 # project imports
 from ..config import Config
 from ..events.network import data_received, client_disconnected
+from ..helpers.logger import log
 
 
 class Network(TCPServer):
@@ -38,6 +39,7 @@ class Network(TCPServer):
             )
 
         super(Network, self).__init__(bind, secure=True, **kwargs)
+        log("Starting game server on host '%s' port %s ..." % bind)
 
 
     def _read(self, sock):

@@ -8,6 +8,7 @@ from ssl import wrap_socket
 
 # project imports
 from ..config import Config
+from ..helpers.logger import log
 from .parser import Parser
 
 
@@ -39,6 +40,7 @@ class Network:
     def start(self):
         self._sock.bind(self._bind)
         self._sock.listen(5)
+        log("Starting gui server on host '%s' port %s ..." % self._bind)
 
 
     def stop(self):
