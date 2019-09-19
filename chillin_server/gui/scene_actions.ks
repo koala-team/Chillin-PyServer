@@ -44,6 +44,14 @@ index = int
 ##########################################################
 ##########################################################
 
+[LayerMask]
+_def = class
+masks_int = int
+masks_string = list<string>
+
+##########################################################
+##########################################################
+
 [BaseCreation]
 _def = class(BaseAction)
 parent_ref = int
@@ -315,15 +323,19 @@ sprite_asset = Asset
 color = Vector4
 flip_x = boolean
 flip_y = boolean
-order = int
 
 ##########################################################
 ##########################################################
 
-[ChangeMaterial]
+[ChangeRenderer]
 _def = class(BaseAction)
+enabled = boolean
 material_asset = Asset
-index = int
+material_index = int
+rendering_layer_mask = uint
+sorting_layer_id = int
+sorting_order = int
+renderer_priority = int
 
 ##########################################################
 ##########################################################
@@ -389,6 +401,7 @@ shadow_near_plane = float
 cookie_asset = Asset
 cookie_size = float
 flare_asset = Asset
+culling_mask = LayerMask
 
 ##########################################################
 ##########################################################
@@ -406,6 +419,7 @@ _def = enum <byte>
 _def = class(BaseAction)
 clear_flag = ECameraClearFlag
 background_color = Vector4
+culling_mask = LayerMask
 is_orthographic = boolean
 orthographic_size = float
 field_of_view = float
@@ -418,18 +432,13 @@ max_rotation = Vector2
 min_zoom = float
 max_zoom = float
 post_process_profile_asset = Asset
+post_process_layers = LayerMask
 
 ##########################################################
 ##########################################################
 
 [ClearScene]
 _def = class(BaseAction)
-
-##########################################################
-##########################################################
-
-[EndCycle]
-_def = class
 
 ##########################################################
 ##########################################################
@@ -459,7 +468,8 @@ _def = enum <byte>
 	}
 
 [ChangeRenderSettings]
-_def = class
+_def = class(BaseAction)
+backward_changes = boolean
 ambient_equator_color = Vector4
 ambient_ground_color = Vector4
 ambient_intensity = float
@@ -484,3 +494,105 @@ skybox_asset = Asset
 subtractive_shadow_color = Vector4
 sun_ref = int
 sun_child_ref = string
+
+##########################################################
+##########################################################
+
+[EParadoxGraphType]
+_def = enum <byte>
+	{
+		Flow,
+		BehaviourTree,
+		FSM
+	}
+
+[ChangeParadoxGraph]
+_def = class(BaseAction)
+type = EParadoxGraphType
+graph_asset = Asset
+play = boolean
+stop = boolean
+restart = boolean
+
+##########################################################
+##########################################################
+
+[ChangeParadoxBehaviourTree]
+_def = class(BaseAction)
+repeat = boolean
+update_interval = float
+
+##########################################################
+##########################################################
+
+[ChangeParadoxFSM]
+_def = class(BaseAction)
+trigger_states_name = list<string>
+hard_trigger = list<boolean>
+
+##########################################################
+##########################################################
+
+[EParadoxBlackboardVariableType]
+_def = enum <byte>
+    {
+        Simple,
+        List,
+        Dictionary
+    }
+
+[EParadoxBlackboardOperationType]
+_def = enum <byte>
+    {
+        Edit,
+        Add,
+        Remove
+    }
+
+[EParadoxBlackboardValueType]
+_def = enum <byte>
+    {
+        Int,
+        Float,
+        Bool,
+        String,
+        GameObject,
+        Vector2,
+        Vector3,
+        Vector4,
+        Color,
+        LayerMask,
+		Asset
+    }
+
+[ChangeParadoxBlackboard]
+_def = class(BaseAction)
+var_name = string
+value_type = EParadoxBlackboardValueType
+
+var_type = EParadoxBlackboardVariableType
+op_type = EParadoxBlackboardOperationType
+list_index = int
+dictionary_key = string
+
+int_value = int
+float_value = float
+bool_value = boolean
+string_value = string
+
+game_object_ref = int
+game_object_child_ref = string
+
+vector_value = Vector4
+
+layer_mask_value = LayerMask
+
+# asset_type must be `TypeName, AssemblyName`
+asset_type = string
+asset_value = Asset
+
+##########################################################
+##########################################################
+
+[EndCycle]
+_def = class
