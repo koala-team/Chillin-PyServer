@@ -28,6 +28,7 @@ class BaseGameHandler(Component):
         self._screen = None
         self.game_running = False
         self.scene = Scene(None, None) # initialize is not necessary, just for auto completion
+        self.team_nicknames = {}
 
 
     def _configure(self, config):
@@ -55,6 +56,11 @@ class BaseGameHandler(Component):
         for t in self._command_processor_threads:
             t.join()
         self._command_processor_threads = []
+
+
+    @handler('register_agent')
+    def _on_register_agent(self, agent_joined_msg):
+        self.team_nicknames[agent_joined_msg.side_name] = agent_joined_msg.team_nickname
 
 
     @handler('all_agents_joined')

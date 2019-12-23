@@ -17,10 +17,17 @@ class cmd_received(Event):
             command = command
         )
 
+
 class all_agents_joined(Event):
 
     def __init__(self):
         super(all_agents_joined, self).__init__()
+
+
+class register_agent(Event):
+
+    def __init__(self, agent_joined_msg):
+        super(register_agent, self).__init__(agent_joined_msg=agent_joined_msg)
 
 
 ### from upper

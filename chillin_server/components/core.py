@@ -7,7 +7,7 @@ from circuits import handler, Component
 from ..config import Config
 from ..events.network import stop_accepting, stop_receiving
 from ..events.protocol import send_msg
-from ..events.core import cmd_received, all_agents_joined, broadcast_msg
+from ..events.core import cmd_received, all_agents_joined, register_agent, broadcast_msg
 
 from ..helpers.logger import log
 from ..helpers.auth import AgentAuthenticator
@@ -60,6 +60,7 @@ class Core(Component):
                     team_nickname = team_nickname
                 )
                 self.fire(broadcast_msg(agent_joined_msg))
+                self.fire(register_agent(agent_joined_msg))
                 self._screen.display_agent_joined(
                     agent_joined_msg.side_name,
                     agent_joined_msg.agent_name,
