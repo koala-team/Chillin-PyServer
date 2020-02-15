@@ -3,6 +3,9 @@
 # python import
 from pydblite import Base
 
+# project imports
+from ..config import Config
+
 
 class AgentAuthenticator:
 
@@ -10,6 +13,8 @@ class AgentAuthenticator:
         self._sides = sides
         self._allowed_teams = allowed_teams
         self._create_agent_table()
+
+        self._allow_duplicate_team_nicknames = Config.config['general'].get('allow_duplicate_team_nicknames', True)
 
 
     def _create_agent_table(self):
@@ -39,10 +44,18 @@ class AgentAuthenticator:
         if not self._allowed_teams or client_team_id in self._allowed_teams:
             r = db(team_id=client_team_id)
             if r:
-                side_name = r[0]['side_name']
-                if client_agent_name in self._sides[side_name] and \
-                        not db(side_name=side_name, agent_name=client_agent_name):
-                    ins_flag = True
+                if not self._allow_duplicate_team_nicknames:
+                    side_name = r[0]['side_name']
+                    if client_agent_name in self._sides[side_name] and \
+                            not db(side_name=side_name, agent_name=client_agent_name):
+                        ins_flag = True
+                else:
+                    for side in self._sides:
+                        side_name = side
+                        if client_agent_name in self._sides[side_name] and \
+                                not db(side_name=side_name, agent_name=client_agent_name):
+                            ins_flag = True
+                            break
             else:
                 side_name = sorted(list(self._sides.keys()))[self._count_joined_teams]
                 side_name = self._allowed_teams.get(client_team_id, side_name)
