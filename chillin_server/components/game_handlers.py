@@ -167,6 +167,7 @@ class RealtimeGameHandler(BaseGameHandler):
         super(RealtimeGameHandler, self).__init__(config)
         self.current_cycle = 0
         self.cycle_duration = self.config['cycle_duration']
+        self.first_cycle_duration = self.config.get('first_cycle_duration', self.cycle_duration)
 
         self._change_cycle_timer = None
         self._command_counter = self._create_command_counter()
@@ -211,13 +212,14 @@ class RealtimeGameHandler(BaseGameHandler):
     @handler('start_game')
     def _on_start_game(self):
         super(RealtimeGameHandler, self)._on_start_game()
-        self._change_cycle()
+        self._change_cycle(is_first_time=True)
 
 
-    def _change_cycle(self, delayed=True):
+    def _change_cycle(self, delayed=True, is_first_time=False):
         if delayed:
+            duration = self.first_cycle_duration if is_first_time else self.cycle_duration
             t = Timer(
-                self.cycle_duration,
+                duration,
                 lambda: self.fire(process_cycle())
             )
             t.start()
