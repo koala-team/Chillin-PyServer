@@ -12,4 +12,3 @@ def utcnowts():
 
 def strutcts(date_string, format):
     return timegm(datetime.strptime(date_string, format).utctimetuple())
-

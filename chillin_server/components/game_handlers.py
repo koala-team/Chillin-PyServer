@@ -10,7 +10,7 @@ from circuits import Component, handler
 # project imports
 from ..events.core import broadcast_msg
 from ..events.game_handlers import start_game, end_game, process_cycle
-from ..helpers.logger import log
+from ..helpers.logger import log, log_file
 from ..helpers.parser import Parser
 from ..helpers.messages import StartGame, EndGame, BaseSnapshot, RealtimeSnapshot, TurnbasedSnapshot
 from ..helpers.datetiming import utcnowts, strutcts
@@ -92,6 +92,7 @@ class BaseGameHandler(Component):
         self.game_running = True
         self.on_update_clients()
         log("Start the game")
+        log_file({utcnowts(): "Start the game"})
 
 
     @handler('end_game')
@@ -114,6 +115,7 @@ class BaseGameHandler(Component):
                 log("  %s:" % name)
                 for side, val in sides.items():
                     log("    %s -> %s" % (side, val))
+        log_file(dict(result=dict(winner_side=winner, details=details)))
 
 
 

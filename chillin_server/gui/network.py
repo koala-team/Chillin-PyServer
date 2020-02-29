@@ -8,7 +8,8 @@ from ssl import wrap_socket
 
 # project imports
 from ..config import Config
-from ..helpers.logger import log
+from ..helpers.logger import log, log_file
+from ..helpers.datetiming import utcnowts
 from .parser import Parser
 
 
@@ -41,6 +42,7 @@ class Network:
         self._sock.bind(self._bind)
         self._sock.listen(5)
         log("Starting gui server on host '%s' port %s ..." % self._bind)
+        log_file({utcnowts(): "Starting gui server on host '%s' port %s ..." % self._bind})
 
 
     def stop(self):

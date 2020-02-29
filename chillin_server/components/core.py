@@ -9,7 +9,8 @@ from ..events.network import stop_accepting, stop_receiving
 from ..events.protocol import send_msg
 from ..events.core import cmd_received, all_agents_joined, register_agent, broadcast_msg
 
-from ..helpers.logger import log
+from ..helpers.logger import log, log_file
+from ..helpers.datetiming import utcnowts
 from ..helpers.auth import AgentAuthenticator
 from ..helpers.master_server import get_token_info, send_match_result
 from ..helpers.messages import JoinOfflineGame, JoinOnlineGame, ClientJoined, \
@@ -69,12 +70,16 @@ class Core(Component):
                 log("Agent %s-%s has joined -> team_nickname: %s" % (
                     agent_joined_msg.side_name, agent_joined_msg.agent_name, agent_joined_msg.team_nickname
                 ))
+                log_file({utcnowts(): "Agent %s-%s has joined -> team_nickname: %s" % (
+                    agent_joined_msg.side_name, agent_joined_msg.agent_name, agent_joined_msg.team_nickname
+                )})
 
             # notify other components when all agents have joined
             if self._agent_authenticator.all_joined():
                 self.fire(all_agents_joined())
                 self.fire(stop_accepting())
                 log("All agents have joined")
+                log_file({utcnowts(): "All agents have joined"})
 
 
     @handler('broadcast_msg')
@@ -107,6 +112,7 @@ class Core(Component):
                 agent_left_msg.agent_name
             )
             log("Agent %s-%s has left the game" % (agent_left_msg.side_name, agent_left_msg.agent_name))
+            log_file({utcnowts(): "Agent %s-%s has left the game" % (agent_left_msg.side_name, agent_left_msg.agent_name)})
 
 
     @handler('end_game')
