@@ -22,7 +22,8 @@ class Config(Singleton):
             'gui.host': str,
             'gui.port': int,
             'gui.replay_dir': str,
-            'gui.replay_filename': str
+            'gui.replay_filename': str,
+            'game_handler.map_path': str
         }
 
         with open(cfg_path) as f:
