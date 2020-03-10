@@ -15,6 +15,7 @@ class Config(Singleton):
     @classmethod
     def initialize(cls, cfg_path):
         cls._inline_configs = {
+            'general.allowed_teams': eval,
             'general.allow_duplicate_team_nicknames': bool,
             'general.log_dir': str,
             'general.log_filename': str,
